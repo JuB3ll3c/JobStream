@@ -1,0 +1,79 @@
+<div class="saved-jobs-page">
+  <header class="page-header">
+    <h1>Offres Sauvegardées</h1>
+    @if (totalCount() > 0) {
+      <p class="count">{{ totalCount() }} {{ totalCount() > 1 ? 'offres sauvegardées' : 'offre sauvegardée' }}</p>
+    }
+  </header>
+
+  @if (isLoading()) {
+    <div class="loading">
+      <div class="spinner"></div>
+      <p>Chargement...</p>
+    </div>
+  }
+
+  @if (errorMessage()) {
+    <div class="error-message">
+      <p>{{ errorMessage() }}</p>
+      <button (click)="loadSavedJobs()">Réessayer</button>
+    </div>
+  }
+
+  @if (!isLoading() && !errorMessage()) {
+    @if (savedJobs().length === 0) {
+      <div class="empty-state">
+        <div class="empty-icon">📁</div>
+        <h2>Aucune offre sauvegardée</h2>
+        <p>Les offres que vous sauvegarderez apparaîtront ici.</p>
+        <a routerLink="/jobs" class="btn-primary">Rechercher des offres</a>
+      </div>
+    } @else {
+      <div class="jobs-list">
+        @for (job of savedJobs(); track trackBySavedJob($index, job)) {
+          <article class="saved-job-card">
+            <div class="card-content">
+              <h3 class="job-title">
+                <a [routerLink]="['/jobs', job.externalId]">{{ job.title }}</a>
+              </h3>
+              <p class="company">{{ job.company }}</p>
+              <div class="job-meta">
+                @if (job.location) {
+                  <span class="location">📍 {{ job.location }}</span>
+                }
+                <span class="saved-date">Sauvegardé le {{ job.savedAt | date:'dd/MM/yyyy' }}</span>
+              </div>
+            </div>
+            <div class="card-actions">
+              @if (job.analysis && getScoreValue(job.analysis.score) !== null) {
+                <span class="score-display" title="Score d'analyse">
+                  📊 Score: {{ getScoreValue(job.analysis.score) }}
+                </span>
+              }
+              <button class="btn-analyze" (click)="onAnalyze(job)" title="Analyser avec l'IA">
+                🤖 Analyser
+              </button>
+              <button class="btn-delete" (click)="onDelete(job)" title="Supprimer">
+                🗑️
+              </button>
+            </div>
+          </article>
+        }
+      </div>
+    }
+  }
+
+  <!-- Confirm Dialog -->
+  <app-confirm-dialog 
+    #confirmDialog 
+    (confirm)="onConfirmDelete()" 
+    (cancel)="onCancelDelete()">
+  </app-confirm-dialog>
+
+  <!-- Toast -->
+  @if (toast()) {
+    <div class="toast" [class.success]="toast()?.type === 'success'" [class.error]="toast()?.type === 'error'">
+      {{ toast()?.message }}
+    </div>
+  }
+</div>

@@ -1,0 +1,49 @@
+---
+- name: update APT
+  apt:
+    update_cache: yes
+    cache_valid_time: 3600
+
+- name: Install system dependencies
+  apt:
+    name:
+      - curl
+      - git
+      - vim
+      - net-tools
+      - software-properties-common
+      - ca-certificates
+      - gnupg
+    state: present
+
+- name: Create repo for the GPG keys
+  file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: '0755'
+
+- name: Add GPG key for Docker
+  apt_key:
+    url: https://download.docker.com/linux/ubuntu/gpg
+    state: present
+
+- name: Add Docker stable repo
+  apt_repository:
+    repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu focal stable"
+    state: present
+
+- name: Install Docker
+  apt:
+    name:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+      - docker-buildx-plugin
+      - docker-compose-plugin
+    state: present
+
+- name: Check if Docker service is up
+  service:
+    name: docker
+    state: started
+    enabled: yes

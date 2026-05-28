@@ -1,0 +1,89 @@
+<div class="analysis-result-container">
+  <!-- Back button -->
+  <a routerLink="/saved-jobs" class="back-link">
+    ← Retour aux offres sauvegardées
+  </a>
+
+  <!-- Loading State -->
+  <div *ngIf="loading" class="loading-state">
+    <div class="spinner"></div>
+    <p>Chargement des résultats de l'analyse...</p>
+  </div>
+
+  <!-- Error State -->
+  <div *ngIf="error && !loading" class="error-state">
+    <p class="error-message">{{ error }}</p>
+    <button (click)="loadAnalysis()" class="retry-btn">Réessayer</button>
+  </div>
+
+  <!-- Analysis Result -->
+  <div *ngIf="!loading && !error && analysis" class="result-content">
+    <!-- Header with score -->
+    <div class="result-header">
+      <h1>Résultat de l'analyse IA</h1>
+      
+      <div class="score-section">
+        <div class="score-circle" [style.borderColor]="getScoreColor(analysis.score)">
+          <span class="score-value">{{ analysis.score ?? '-' }}</span>
+          <span class="score-max">/100</span>
+        </div>
+        <span class="score-label" [style.color]="getScoreColor(analysis.score)">
+          {{ getScoreLabel(analysis.score) }}
+        </span>
+      </div>
+    </div>
+
+    <!-- Summary -->
+    <section class="result-section" *ngIf="analysis.summary">
+      <h2>Résumé</h2>
+      <p class="summary-text">{{ analysis.summary }}</p>
+    </section>
+
+    <!-- Tags -->
+    <section class="result-section" *ngIf="analysis.tags && analysis.tags.length > 0">
+      <h2>Tags</h2>
+      <div class="tags-container">
+        <span *ngFor="let tag of analysis.tags" class="tag">{{ tag }}</span>
+      </div>
+    </section>
+
+    <!-- Strengths -->
+    <section class="result-section" *ngIf="analysis.strengths && analysis.strengths.length > 0">
+      <h2>Points forts</h2>
+      <ul class="strengths-list">
+        <li *ngFor="let strength of analysis.strengths" class="strength-item">
+          <span class="icon positive">+</span>
+          {{ strength }}
+        </li>
+      </ul>
+    </section>
+
+    <!-- Weaknesses -->
+    <section class="result-section" *ngIf="analysis.weaknesses && analysis.weaknesses.length > 0">
+      <h2>Points faibles</h2>
+      <ul class="weaknesses-list">
+        <li *ngFor="let weakness of analysis.weaknesses" class="weakness-item">
+          <span class="icon negative">-</span>
+          {{ weakness }}
+        </li>
+      </ul>
+    </section>
+
+    <!-- Recommendations -->
+    <section class="result-section" *ngIf="analysis.recommendations && analysis.recommendations.length > 0">
+      <h2>Recommandations</h2>
+      <ul class="recommendations-list">
+        <li *ngFor="let rec of analysis.recommendations" class="recommendation-item">
+          💡 {{ rec }}
+        </li>
+      </ul>
+    </section>
+
+    <!-- Timestamps -->
+    <div class="timestamps">
+      <p *ngIf="analysis.createdAt">Analyse démarrée le: {{ formatDate(analysis.createdAt) }}</p>
+      <p *ngIf="analysis.completedAt">Analyse terminée le: {{ formatDate(analysis.completedAt) }}</p>
+      <p *ngIf="analysis.errorMessage" class="error-text">Erreur: {{ analysis.errorMessage }}</p>
+    </div>
+  </div>
+</div>

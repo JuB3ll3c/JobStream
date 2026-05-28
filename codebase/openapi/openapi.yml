@@ -1,0 +1,793 @@
+openapi: 3.0.3
+info:
+  title: JobStream API
+  version: 1.0.0
+  description: |
+    API REST pour la recherche et gestion d'offres d'emploi.
+    Contrats partagés entre Backend (Spring Boot) et Frontend (Angular).
+    
+    **Approche API-First**: Ce fichier est la source de vérité.
+    Les DTOs et clients sont générés automatiquement à partir de cette spec.
+servers:
+  - url: http://localhost:8080
+    description: Development server
+
+# ============================================================================
+# PATHS - Endpoints RESTful
+# ============================================================================
+paths:
+  # --------------------------------------------------------------------------
+  # Jobs - Recherche externe (JSearch)
+  # --------------------------------------------------------------------------
+  /api/jobs:
+    get:
+      summary: Rechercher des offres d'emploi
+      description: |
+        Recherche des offres via l'API JSearch externe.
+        Utiliser les query params pour filtrer.
+      parameters:
+        - name: q
+          in: query
+          required: true
+          description: Mot-clé de recherche
+          schema:
+            type: string
+          example: "développeur java paris"
+        - name: page
+          in: query
+          required: false
+          description: Numéro de page
+          schema:
+            type: integer
+            default: 1
+            example: 1
+        - name: limit
+          in: query
+          required: false
+          description: Nombre de résultats par page
+          schema:
+            type: integer
+            default: 20
+            example: 20
+      responses:
+        '200':
+          description: Liste des jobs trouvés
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobSearchResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/jobs/{externalId}:
+    get:
+      summary: Détail d'un job externe
+      description: Retourne les détails d'un job trouvé via JSearch
+      parameters:
+        - name: externalId
+          in: path
+          required: true
+          description: ID externe du job (JSearch)
+          schema:
+            type: string
+          example: "job_123456"
+      responses:
+        '200':
+          description: Détails du job
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobDto'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # --------------------------------------------------------------------------
+  # Saved Jobs - Gestion des jobs sauvegardés
+  # --------------------------------------------------------------------------
+  /api/saved-jobs:
+    get:
+      summary: Liste des jobs sauvegardés
+      description: Retourne tous les jobs sauvegardés par l'utilisateur
+      parameters:
+        - name: page
+          in: query
+          required: false
+          description: Numéro de page
+          schema:
+            type: integer
+            default: 0
+        - name: size
+          in: query
+          required: false
+          description: Taille de page
+          schema:
+            type: integer
+            default: 20
+        - name: sort
+          in: query
+          required: false
+          description: Tri (savedAt, title)
+          schema:
+            type: string
+            default: "savedAt,desc"
+      responses:
+        '200':
+          description: Liste paginée des jobs sauvegardés
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagedSavedJobResponse'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+    post:
+      summary: Sauvegarder un job
+      description: |
+        Sauvegarde un job en base de données.
+        Déclenche l'analyse IA automatiquement via Kafka.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaveJobRequest'
+      responses:
+        '201':
+          description: Job sauvegardé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SavedJobDto'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /api/saved-jobs/check:
+    post:
+      summary: Vérifie quels jobs sont sauvegardés
+      description: Retourne la liste des externalIds qui sont déjà sauvegardés
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: string
+              example: ["12345", "67890"]
+      responses:
+        '200':
+          description: Liste des externalIds sauvegardés
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+
+  /api/saved-jobs/{id}:
+    get:
+      summary: Détail d'un job sauvegardé
+      description: Retourne les détails d'un job sauvegardé avec son analyse
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID interne du job sauvegardé
+          schema:
+            type: string
+            format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
+      responses:
+        '200':
+          description: Détails du job sauvegardé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SavedJobDto'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      summary: Supprimer un job sauvegardé
+      description: Supprime un job sauvegardé de la base de données
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID du job à supprimer
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Job supprimé
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # --------------------------------------------------------------------------
+  # Analyses - Gestion des analyses IA
+  # --------------------------------------------------------------------------
+  /api/analyses:
+    post:
+      summary: Déclencher une analyse IA
+      description: |
+        Lance l'analyse IA d'un job sauvegardé via Kafka.
+        Retourne immédiatement avec un ID d'analyse.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAnalysisRequest'
+      responses:
+        '202':
+          description: Analyse acceptée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalysisDto'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    get:
+      summary: Liste des analyses
+      description: Retourne toutes les analyses de l'utilisateur
+      parameters:
+        - name: savedJobId
+          in: query
+          required: false
+          description: Filtrer par job sauvegardé
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Liste des analyses
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AnalysisDto'
+
+  /api/analyses/{id}:
+    get:
+      summary: Détail d'une analyse
+      description: Retourne le résultat complet de l'analyse IA
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID de l'analyse
+          schema:
+            type: string
+            format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440001"
+      responses:
+        '200':
+          description: Détails de l'analyse
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalysisDto'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/saved-jobs/{id}/analyze:
+    post:
+      summary: Déclencher l'analyse d'un job sauvegardé
+      description: Raccourci pour lancer l'analyse d'un job spécifique
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID du job sauvegardé
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '202':
+          description: Analyse acceptée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalysisDto'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # --------------------------------------------------------------------------
+  # Events - Server-Sent Events
+  # --------------------------------------------------------------------------
+  /api/events:
+    get:
+      summary: Flux temps réel des mises à jour
+      description: |
+        Endpoint Server-Sent Events pour recevoir les mises à jour
+        en temps réel (statut analyse, etc.)
+      responses:
+        '200':
+          description: Flux SSE
+          content:
+            text/event-stream:
+              schema:
+                type: string
+                example: "data: {\"type\":\"ANALYSIS_COMPLETED\",\"payload\":{...}}"
+
+  # --------------------------------------------------------------------------
+  # Health Check
+  # --------------------------------------------------------------------------
+  /api/health:
+    get:
+      summary: Health check
+      description: Vérifie que le service est opérationnel
+      responses:
+        '200':
+          description: Service OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+
+# ============================================================================
+# COMPONENTS - Schemas & Responses
+# ============================================================================
+components:
+  schemas:
+    # ----------------------------------------------------------------------
+    # Job DTOs (externes - JSearch)
+    # ----------------------------------------------------------------------
+    JobDto:
+      type: object
+      description: Job trouvé via l'API externe (non sauvegardé)
+      required:
+        - externalId
+        - title
+        - company
+        - location
+      properties:
+        externalId:
+          type: string
+          description: ID externe (JSearch)
+          example: "job_123456"
+        title:
+          type: string
+          example: "Développeur Java Senior"
+        company:
+          type: string
+          example: "TechCorp France"
+        location:
+          type: string
+          example: "Paris, France"
+        description:
+          type: string
+          description: Description complète de l'offre
+          example: "Nous cherchons un développeur Java expérimenté..."
+        salaryMin:
+          type: integer
+          description: Salaire minimum
+          example: 50000
+        salaryMax:
+          type: integer
+          description: Salaire maximum
+          example: 80000
+        contractType:
+          type: string
+          description: Type de contrat
+          example: "CDI"
+        postedDate:
+          type: string
+          format: date
+          description: Date de publication
+          example: "2026-03-20"
+        jobUrl:
+          type: string
+          description: URL originale de l'offre
+          example: "https://example.com/job/123"
+        requirements:
+          type: array
+          items:
+            type: string
+          description: Liste des exigences
+
+          example: ["Java 17", "Spring Boot", "PostgreSQL"]
+        benefits:
+          type: array
+          items:
+            type: string
+          description: Avantages proposés
+
+          example: ["RTT", "Télétravail", "Mutuelle"]
+
+    # ----------------------------------------------------------------------
+    # Saved Job DTOs
+    # ----------------------------------------------------------------------
+    SavedJobDto:
+      type: object
+      description: Job sauvegardé en base avec analyse IA
+      required:
+        - id
+        - externalId
+        - title
+        - company
+        - savedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: ID interne
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        externalId:
+          type: string
+          description: ID externe (JSearch)
+          example: "job_123456"
+        title:
+          type: string
+          example: "Développeur Java Senior"
+        company:
+          type: string
+          example: "TechCorp France"
+        location:
+          type: string
+          example: "Paris, France"
+        description:
+          type: string
+          example: "Description du poste..."
+        salaryMin:
+          type: integer
+
+        salaryMax:
+          type: integer
+
+        contractType:
+          type: string
+
+        postedDate:
+          type: string
+          format: date
+
+        jobUrl:
+          type: string
+        requirements:
+          type: array
+          items:
+            type: string
+
+        benefits:
+          type: array
+          items:
+            type: string
+
+        savedAt:
+          type: string
+          format: date-time
+          description: Date de sauvegarde
+          example: "2026-03-26T10:30:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          description: Dernière mise à jour
+
+        analysis:
+          $ref: '#/components/schemas/AnalysisDto'
+
+    SaveJobRequest:
+      type: object
+      description: DTO interne pour la requête de sauvegarde d'un job
+      required:
+        - externalId
+        - title
+        - company
+        - location
+      properties:
+        externalId:
+          type: string
+        title:
+          type: string
+        company:
+          type: string
+        location:
+          type: string
+        description:
+          type: string
+        contractType:
+          type: string
+        postedDate:
+          type: string
+          format: date
+        jobUrl:
+          type: string
+        requirements:
+          type: array
+          items:
+            type: string
+        benefits:
+          type: array
+          items:
+            type: string
+
+    # ----------------------------------------------------------------------
+    # Kafka Message DTOs (shared between services)
+    # ----------------------------------------------------------------------
+    JobAnalysisRequest:
+      type: object
+      description: Message Kafka pour demander une analyse de job
+      required:
+        - jobId
+        - jobTitle
+        - company
+      properties:
+        jobId:
+          type: string
+        jobTitle:
+          type: string
+        company:
+          type: string
+        location:
+          type: string
+        description:
+          type: string
+        requirements:
+          type: string
+        benefits:
+          type: string
+        contractType:
+          type: string
+        applyUrl:
+          type: string
+        analysisId:
+          type: string
+          format: uuid
+
+    JobAnalysisResult:
+      type: object
+      description: Message Kafka retourné par l'AI analyzer
+      required:
+        - jobId
+      properties:
+        jobId:
+          type: string
+        score:
+          type: integer
+        summary:
+          type: string
+        strengths:
+          type: array
+          items:
+            type: string
+        weaknesses:
+          type: array
+          items:
+            type: string
+        recommendations:
+          type: array
+          items:
+            type: string
+        tags:
+          type: array
+          items:
+            type: string
+        createdAt:
+          type: string
+          format: date-time
+        completedAt:
+          type: string
+          format: date-time
+        errorMessage:
+          type: string
+
+    # ----------------------------------------------------------------------
+    # Analysis DTOs
+    # ----------------------------------------------------------------------
+    AnalysisDto:
+      type: object
+      description: Résultat de l'analyse IA
+      required:
+        - id
+        - savedJobId
+        - status
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: ID de l'analyse
+          example: "660e8400-e29b-41d4-a716-446655440001"
+        savedJobId:
+          type: string
+          format: uuid
+          description: ID du job analysé
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        status:
+          $ref: '#/components/schemas/AnalysisStatus'
+        score:
+          type: integer
+          description: Score de correspondance (0-100)
+          minimum: 0
+          maximum: 100
+
+          example: 85
+        summary:
+          type: string
+          description: Résumé de l'analyse
+
+          example: "Excellente opportunité pour développeur Java senior"
+        strengths:
+          type: array
+          items:
+            type: string
+          description: Points forts identifiés
+
+          example: ["Stack moderne", "Salaire attractif", "Remote possible"]
+        weaknesses:
+          type: array
+          items:
+            type: string
+          description: Points faibles identifiés
+
+          example: ["Entreprise récente", "Horaires intensifs"]
+        recommendations:
+          type: array
+          items:
+            type: string
+          description: Recommandations personnalisées
+
+          example: ["Préparer des exemples de projets Spring"]
+        tags:
+          type: array
+          items:
+            type: string
+          description: Tags extraits
+
+          example: ["java", "spring", "remote", "senior"]
+        createdAt:
+          type: string
+          format: date-time
+          description: Début de l'analyse
+          example: "2026-03-26T10:30:00Z"
+        completedAt:
+          type: string
+          format: date-time
+          description: Fin de l'analyse
+
+
+    AnalysisStatus:
+      type: string
+      enum:
+        - PENDING
+        - IN_PROGRESS
+        - COMPLETED
+        - FAILED
+      description: Statut de l'analyse IA
+      example: "COMPLETED"
+
+    CreateAnalysisRequest:
+      type: object
+      description: Requête pour déclencher une analyse
+      required:
+        - savedJobId
+      properties:
+        savedJobId:
+          type: string
+          format: uuid
+          description: ID du job à analyser
+          example: "550e8400-e29b-41d4-a716-446655440000"
+
+    # ----------------------------------------------------------------------
+    # Response DTOs
+    # ----------------------------------------------------------------------
+    JobSearchResponse:
+      type: object
+      properties:
+        jobs:
+          type: array
+          items:
+            $ref: '#/components/schemas/JobDto'
+        total:
+          type: integer
+          description: Nombre total de résultats
+          example: 150
+        count:
+          type: integer
+          description: Nombre de résultats retournés
+          example: 15
+
+    PagedSavedJobResponse:
+      type: object
+      description: Réponse paginée pour les jobs sauvegardés
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/SavedJobDto'
+        page:
+          type: integer
+          example: 0
+        size:
+          type: integer
+          example: 20
+        totalElements:
+          type: integer
+          example: 45
+        totalPages:
+          type: integer
+          example: 3
+
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+            - UP
+            - DOWN
+          example: "UP"
+        timestamp:
+          type: string
+          format: date-time
+
+    # ----------------------------------------------------------------------
+    # Error DTOs
+    # ----------------------------------------------------------------------
+    ErrorResponse:
+      type: object
+      properties:
+        code:
+          type: string
+          example: "NOT_FOUND"
+        message:
+          type: string
+          example: "Job not found"
+        details:
+          type: object
+          additionalProperties:
+            type: string
+
+  # ----------------------------------------------------------------------
+  # Responses
+  # ----------------------------------------------------------------------
+  responses:
+    BadRequest:
+      description: Requête invalide
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            code: "BAD_REQUEST"
+            message: "Invalid parameters"
+
+    NotFound:
+      description: Ressource non trouvée
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            code: "NOT_FOUND"
+            message: "Job not found"
+
+    Conflict:
+      description: Ressource déjà existante
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            code: "CONFLICT"
+            message: "Job already saved"
+
+    InternalError:
+      description: Erreur serveur interne
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            code: "INTERNAL_ERROR"
+            message: "An unexpected error occurred"

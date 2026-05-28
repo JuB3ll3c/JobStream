@@ -1,0 +1,32 @@
+# Java
+target/
+*.class
+*.jar
+*.war
+*.ear
+# Node/Angular
+node_modules/
+dist/
+.angular/
+# IDE
+.idea/
+*.iml
+.vscode/
+*.swp
+# OS
+.DS_Store
+Thumbs.db
+# Logs
+*.log
+logs/
+# Environment
+.env
+.env.local
+# Build
+build/
+out/
+/opencode.jsonc
+/codebase/ai-analyzer-service/src/main/resources/cv.md
+/.tmp/
+infra/local_with_docker/.env
+/infra/local_with_vagrant_ansible/.vagrant/

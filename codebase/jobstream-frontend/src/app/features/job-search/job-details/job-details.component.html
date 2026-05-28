@@ -1,0 +1,226 @@
+<div class="job-details-page">
+  <!-- Loading State -->
+  @if (isLoading()) {
+    <div class="loading-container">
+      <div class="loading-spinner"></div>
+      <p>Loading job details...</p>
+    </div>
+  }
+
+  <!-- Error State -->
+  @if (errorMessage()) {
+    <div class="error-container">
+      <div class="error-message">
+        <span class="material-icons">error_outline</span>
+        {{ errorMessage() }}
+      </div>
+      <button class="back-link" (click)="goBack()">
+        <span class="material-icons">arrow_back</span>
+        Back to results
+      </button>
+    </div>
+  }
+
+  <!-- Job Details -->
+  @if (job(); as job) {
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Back Link -->
+      <div class="mb-8">
+        <button class="back-link" (click)="goBack()">
+          <span class="material-icons">arrow_back</span>
+          Back to results
+        </button>
+        
+        @if (successMessage()) {
+          <div class="success-toast">
+            <span class="material-icons">check_circle</span>
+            {{ successMessage() }}
+          </div>
+        }
+        
+        @if (errorMessage()) {
+          <div class="error-toast">
+            <span class="material-icons">error</span>
+            {{ errorMessage() }}
+          </div>
+        }
+      </div>
+
+      <div class="grid-layout">
+        <!-- Left Column: Job Details -->
+        <div class="left-column">
+          <!-- Hero Section Card -->
+          <div class="hero-card">
+            <div class="hero-content">
+              <div class="company-logo">
+                <span class="material-icons">business</span>
+              </div>
+              <div class="hero-info">
+                <h1 class="job-title">{{ job.title }}</h1>
+                <div class="job-meta">
+                  @if (job.company) {
+                    <span class="meta-item">
+                      <span class="material-icons">business</span>
+                      {{ job.company }}
+                    </span>
+                  }
+                  @if (job.location) {
+                    <span class="meta-item">
+                      <span class="material-icons">location_on</span>
+                      {{ job.location }}
+                    </span>
+                  }
+                  @if (job.salaryMin || job.salaryMax) {
+                    <span class="meta-item">
+                      <span class="material-icons">payments</span>
+                      {{ formatSalary(job.salaryMin ?? undefined, job.salaryMax ?? undefined) }}
+                    </span>
+                  }
+                </div>
+              </div>
+              <div class="hero-actions">
+                <button class="apply-button" (click)="applyToJob()">
+                  Apply Now
+                </button>
+                <button 
+                  class="save-button" 
+                  [class.saved]="isSaved()"
+                  [disabled]="isSaving() || isSaved()"
+                  (click)="saveJob()"
+                >
+                  @if (isSaving()) {
+                    <span class="material-icons">hourglass_empty</span>
+                    Saving...
+                  } @else if (isSaved()) {
+                    <span class="material-icons">bookmark</span>
+                    Saved
+                  } @else {
+                    <span class="material-icons">bookmark</span>
+                    Save Job
+                  }
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Job Description Content -->
+          <div class="content-card">
+            <!-- About the Role -->
+            <section class="content-section">
+              <h2>About the Role</h2>
+              <p class="description-text">{{ job.description }}</p>
+            </section>
+
+            <!-- What You'll Do -->
+            @if (job.requirements && job.requirements.length > 0) {
+              <section class="content-section">
+                <h2>What You'll Do</h2>
+                <ul class="bullet-list">
+                  @for (req of job.requirements; track req) {
+                    <li>
+                      <span class="material-icons check-icon">check_circle</span>
+                      <span>{{ req }}</span>
+                    </li>
+                  }
+                </ul>
+              </section>
+            }
+
+            <!-- Requirements -->
+            <section class="content-section">
+              <h2>Requirements</h2>
+              <ul class="bullet-list">
+                @if (job.requirements && job.requirements.length > 0) {
+                  @for (req of job.requirements; track req) {
+                    <li>
+                      <span class="material-icons verified-icon">verified</span>
+                      <span>{{ req }}</span>
+                    </li>
+                  }
+                }
+              </ul>
+            </section>
+          </div>
+        </div>
+
+        <!-- Right Column: AI Analysis & Side Info -->
+        <div class="right-column">
+          <!-- AI Match Card -->
+          @if (analysis(); as analysisData) {
+            <div class="ai-card">
+              <div class="ai-header">
+                <h3>AI Analysis</h3>
+                <span class="ai-badge">Beta</span>
+              </div>
+              <div class="ai-score">
+                <div class="ai-circle" [style.borderColor]="getScoreColor(analysisData.score)">
+                  <span class="ai-percent">{{ analysisData.score ?? '-' }}%</span>
+                </div>
+                <div class="ai-match-info">
+                  <p class="ai-match-label" [style.color]="getScoreColor(analysisData.score)">{{ getScoreLabel(analysisData.score) }}</p>
+                  <p class="ai-match-desc">Based on your profile and CV</p>
+                </div>
+              </div>
+              @if (analysisData.summary) {
+                <div class="ai-description">
+                  <p>{{ analysisData.summary }}</p>
+                </div>
+              }
+              @if (analysisData.tags && analysisData.tags.length > 0) {
+                <div class="ai-tags">
+                  @for (tag of analysisData.tags; track tag) {
+                    <span class="ai-tag">{{ tag }}</span>
+                  }
+                </div>
+              }
+            </div>
+          } @else {
+            <div class="ai-card">
+              <div class="ai-header">
+                <h3>AI Analysis</h3>
+                <span class="ai-badge">Beta</span>
+              </div>
+              <div class="ai-no-analysis">
+                <p>Analysez cette offre pour voir l'analyse IA</p>
+              </div>
+            </div>
+          }
+
+          <!-- Job Overview Card -->
+          <div class="overview-card">
+            <h3>Job Overview</h3>
+            <div class="overview-list">
+              <div class="overview-item">
+                <span class="overview-label">Posted</span>
+                <span class="overview-value">{{ formatDate(job.postedDate ?? undefined) }}</span>
+              </div>
+              @if (job.contractType) {
+                <div class="overview-item">
+                  <span class="overview-label">Job Type</span>
+                  <span class="overview-value">{{ job.contractType }}</span>
+                </div>
+              }
+              <div class="overview-item">
+                <span class="overview-label">Experience</span>
+                <span class="overview-value">Senior (5+ yrs)</span>
+              </div>
+              <div class="overview-item">
+                <span class="overview-label">Applicants</span>
+                <span class="overview-value accent">42 active</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Map/Location -->
+          <div class="map-card">
+            <div class="map-placeholder">
+              <span class="map-label">Office Location</span>
+              <span class="material-icons">open_in_new</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  }
+</div>

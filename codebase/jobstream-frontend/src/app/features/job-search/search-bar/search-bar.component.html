@@ -1,0 +1,57 @@
+<div class="search-container">
+  <form [formGroup]="searchForm" (ngSubmit)="onSearchSubmit()" class="search-bar">
+    <div class="search-input-wrapper">
+      <span class="search-icon material-icons">search</span>
+      <input 
+        type="text" 
+        class="search-input"
+        placeholder="Job title, keyword, or company"
+        formControlName="query"
+        (keyup.enter)="onSearchSubmit()"
+      />
+      @if (searchForm.get('query')?.value) {
+        <button type="button" class="clear-button" (click)="clearSearch()">
+          <span class="material-icons">close</span>
+        </button>
+      }
+      @if (searchForm.get('query')?.invalid && searchForm.get('query')?.touched) {
+        <span class="error-text">Minimum 2 characters</span>
+      }
+    </div>
+    <div class="location-input-wrapper">
+      <span class="location-icon material-icons">location_on</span>
+      <input 
+        type="text" 
+        class="location-input"
+        placeholder="City, state, or remote"
+        formControlName="location"
+      />
+      @if (searchForm.get('location')?.value) {
+        <button type="button" class="clear-button" (click)="clearLocation()">
+          <span class="material-icons">close</span>
+        </button>
+      }
+    </div>
+    <button type="submit" class="search-button" [disabled]="isLoading()">
+      @if (isLoading()) {
+        <span class="loading-spinner"></span>
+      } @else {
+        <span class="material-icons">search</span>
+      }
+    </button>
+  </form>
+  
+  <!-- Popular Searches -->
+  <div class="popular-searches">
+    <span class="popular-label">Popular:</span>
+    @for (term of popularSearches; track term) {
+      <button 
+        type="button"
+        class="popular-tag"
+        (click)="onPopularSearchClick(term)"
+      >
+        {{ term }}
+      </button>
+    }
+  </div>
+</div>

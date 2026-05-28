@@ -1,0 +1,15 @@
+- hosts: all
+  roles:
+    - common
+
+- hosts: brokers
+  roles:
+    - kafka
+
+- hosts: db
+  roles:
+    - postgres
+
+- hosts: app
+  roles:
+    - backend

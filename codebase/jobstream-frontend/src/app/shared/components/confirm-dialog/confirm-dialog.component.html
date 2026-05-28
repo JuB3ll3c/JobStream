@@ -1,0 +1,20 @@
+@if (isVisible()) {
+  <div class="dialog-overlay" (click)="onOverlayClick($event)">
+    <div class="dialog-container">
+      <div class="dialog-header">
+        <h2>{{ data.title }}</h2>
+      </div>
+      <div class="dialog-body">
+        <p>{{ data.message }}</p>
+      </div>
+      <div class="dialog-actions">
+        <button class="btn-cancel" (click)="onCancel()">
+          {{ data.cancelText }}
+        </button>
+        <button class="btn-confirm" (click)="onConfirm()">
+          {{ data.confirmText }}
+        </button>
+      </div>
+    </div>
+  </div>
+}

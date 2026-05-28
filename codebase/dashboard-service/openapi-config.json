@@ -1,0 +1,15 @@
+{
+  "interfaceOnly": true,
+  "useSpringBoot3": true,
+  "useJava8Dates": false,
+  "dateLibrary": "java8",
+  "generateApis": false,
+  "generateModels": true,
+  "modelTests": false,
+  "modelDocs": false,
+  "apiTests": false,
+  "apiDocs": false,
+  "returnResponseOnVoid": true,
+  "optionalBeanDefinition": false,
+  "useOptional": false
+}

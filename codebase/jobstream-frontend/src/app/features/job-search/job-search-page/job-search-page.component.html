@@ -1,0 +1,164 @@
+<div class="job-search-page">
+  <!-- Hero Section -->
+  <section class="hero-section">
+    <div class="hero-content">
+      <h1 class="hero-title">Find your dream career path.</h1>
+
+      <!-- Search Bar Component -->
+      <app-search-bar
+        [searchQuery]="searchQuery()"
+        [locationQuery]="locationQuery()"
+        [isLoading]="isLoading()"
+        (searchSubmitted)="onSearchSubmitted($event)"
+        (popularSearchClicked)="onPopularSearchClicked($event)"
+      ></app-search-bar>
+    </div>
+  </section>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <!-- Filters Sidebar -->
+    <aside class="filters-sidebar">
+      <app-job-filters
+        [selectedJobType]="selectedJobType()"
+        [selectedExperienceLevel]="selectedExperienceLevel()"
+        [salaryRange]="salaryRange()"
+        (filtersChanged)="onFiltersChanged($event)"
+        (filtersCleared)="onFiltersCleared()"
+      ></app-job-filters>
+    </aside>
+
+    <!-- Results Section -->
+    <section class="results-section">
+      <!-- Results Header -->
+      <div class="results-header">
+        <div class="results-count">
+          @if (isLoading()) {
+            <span>Searching...</span>
+          } @else {
+            <span>Showing {{ jobs().length }} of {{ totalCount() }} results</span>
+            @if (searchQuery()) {
+              <span> for "{{ searchQuery() }}"</span>
+            }
+          }
+        </div>
+        <div class="sort-options">
+          <label for="sort-by">Sort by:</label>
+          <select id="sort-by" class="sort-select">
+            <option value="relevance">Relevance</option>
+            <option value="date">Date</option>
+            <option value="salary">Salary</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Error Message -->
+      @if (errorMessage()) {
+        <div class="error-message">
+          <span class="material-icons">error_outline</span>
+          {{ errorMessage() }}
+        </div>
+      }
+
+      <!-- Job Listings -->
+      <div class="job-listings">
+        @if (isLoading() && jobs().length === 0) {
+          <div class="loading-skeleton">
+            @for (i of [1, 2, 3, 4]; track i) {
+              <div class="skeleton-card"></div>
+            }
+          </div>
+        } @else if (jobs().length === 0 && !isLoading()) {
+          <div class="no-results">
+            <span class="material-icons">search_off</span>
+            <h3>No jobs found</h3>
+            <p>Try adjusting your search or filters</p>
+            <button class="new-search-button" (click)="newSearch()">
+              New Search
+            </button>
+          </div>
+        } @else {
+          @for (job of jobs(); track job.externalId) {
+            <app-job-card [job]="job" [isSaved]="isJobSaved(job.externalId)"></app-job-card>
+          }
+        }
+      </div>
+
+      <!-- Pagination -->
+      @if (showPagination() && jobs().length > 0) {
+        <div class="pagination">
+          <!-- Previous Button -->
+          <button 
+            class="pagination-button"
+            [disabled]="currentPage() === 1 || isLoading()"
+            (click)="previousPage()"
+          >
+            <span class="material-icons">chevron_left</span>
+            Previous
+          </button>
+
+          <!-- Page Numbers -->
+          <div class="pagination-pages">
+            @for (page of pageNumbers(); track page) {
+              @if (page === -1) {
+                <span class="pagination-ellipsis">...</span>
+              } @else {
+                <button 
+                  class="pagination-page"
+                  [class.active]="page === currentPage()"
+                  [disabled]="isLoading()"
+                  (click)="goToPage(page)"
+                >
+                  {{ page }}
+                </button>
+              }
+            }
+          </div>
+
+          <!-- Next Button -->
+          <button 
+            class="pagination-button"
+            [disabled]="currentPage() >= totalPages() || isLoading()"
+            (click)="nextPage()"
+          >
+            Next
+            <span class="material-icons">chevron_right</span>
+          </button>
+        </div>
+      }
+
+      <!-- Load More (alternative to pagination) -->
+      @if (hasMoreJobs() && jobs().length > 0 && !showPagination()) {
+        <div class="load-more-container">
+          <button
+            class="load-more-button"
+            (click)="loadMore()"
+            [disabled]="isLoading()"
+          >
+            @if (isLoading()) {
+              <span class="loading-spinner"></span>
+              Loading...
+            } @else {
+              Load more jobs
+            }
+          </button>
+        </div>
+      }
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-content">
+      <div class="footer-brand">
+        <span class="footer-logo">JobStream</span>
+        <p class="footer-copyright">&copy; 2024 JobStream. All rights reserved.</p>
+      </div>
+      <div class="footer-links">
+        <a href="#" class="footer-link">Terms</a>
+        <a href="#" class="footer-link">Privacy</a>
+        <a href="#" class="footer-link">Contact</a>
+      </div>
+    </div>
+  </footer>
+</div>

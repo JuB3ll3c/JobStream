@@ -1,0 +1,224 @@
+/* Job Card Styles - Based on Stitch Design System */
+
+.job-card {
+  background-color: var(--surface-container-lowest, #ffffff);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+}
+
+.job-card:hover {
+  background-color: var(--surface-bright, #f7f9fc);
+  box-shadow: 0 12px 32px rgba(0, 39, 100, 0.06);
+  border-color: var(--outline-variant, #c3c6d3);
+}
+
+/* Header */
+.job-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.75rem;
+}
+
+.job-title-section {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.job-title {
+  font-family: 'Manrope', sans-serif;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--on-surface, #191c1e);
+  margin: 0;
+  line-height: 1.3;
+}
+
+.job-badge {
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+}
+
+.job-badge.closing-soon {
+  background-color: var(--tertiary-container, #ff8e63);
+  color: var(--on-tertiary-container, #ffffff);
+}
+
+.save-button {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  transition: background-color 0.2s ease;
+  color: var(--on-surface-variant, #434652);
+}
+
+.save-button:hover {
+  background-color: var(--surface-container-high, #e6e8eb);
+}
+
+.save-button.saved {
+  color: var(--tertiary, #004848);
+}
+
+.save-button .material-icons {
+  font-size: 1.5rem;
+}
+
+/* Company */
+.job-company {
+  margin-bottom: 0.75rem;
+}
+
+.company-name {
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--primary, #002764);
+}
+
+/* Meta Information */
+.job-meta {
+  display: flex;
+  gap: 1.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.meta-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--on-surface-variant, #434652);
+}
+
+.meta-item .material-icons {
+  font-size: 1rem;
+  color: var(--on-surface-variant, #434652);
+}
+
+/* Salary */
+.job-salary {
+  margin-bottom: 1rem;
+}
+
+.salary-badge {
+  display: inline-block;
+  background-color: var(--secondary-fixed, #d5e3fc);
+  color: var(--on-secondary-fixed-variant, #3a485b);
+  font-size: 0.875rem;
+  font-weight: 600;
+  padding: 0.5rem 1rem;
+  border-radius: 9999px;
+}
+
+/* Description */
+.job-description {
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: var(--on-surface-variant, #434652);
+  margin-bottom: 1rem;
+}
+
+/* Skills */
+.job-skills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.skill-tag {
+  background-color: var(--surface-container-high, #e6e8eb);
+  color: var(--on-surface, #191c1e);
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 0.375rem 0.75rem;
+  border-radius: 0.5rem;
+}
+
+.skill-more {
+  font-size: 0.75rem;
+  color: var(--on-surface-variant, #434652);
+  padding: 0.375rem 0;
+}
+
+/* Actions */
+.job-actions {
+  display: flex;
+  gap: 1rem;
+}
+
+.apply-button {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: linear-gradient(135deg, var(--primary-container, #003c90) 0%, var(--primary, #002764) 100%);
+  border: none;
+  border-radius: 0.75rem;
+  padding: 0.75rem 1.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--on-primary, #ffffff);
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.apply-button:hover {
+  transform: scale(1.02);
+  box-shadow: 0 4px 12px rgba(0, 39, 100, 0.3);
+}
+
+.apply-button .material-icons {
+  font-size: 1rem;
+}
+
+.details-button {
+  background: transparent;
+  border: 1px solid var(--outline-variant, #c3c6d3);
+  border-radius: 0.75rem;
+  padding: 0.75rem 1.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--on-surface, #191c1e);
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.details-button:hover {
+  background-color: var(--surface-container-high, #e6e8eb);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .job-card {
+    padding: 1rem;
+  }
+
+  .job-title {
+    font-size: 1.125rem;
+  }
+
+  .job-meta {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .job-actions {
+    flex-direction: column;
+  }
+
+  .apply-button,
+  .details-button {
+    width: 100%;
+  }
+}

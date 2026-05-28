@@ -1,0 +1,12 @@
+<header class="app-header">
+  <div class="header-content">
+    <a routerLink="/jobs" class="logo">JobStream</a>
+    <nav class="header-nav">
+      <a routerLink="/jobs" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Jobs</a>
+      <a routerLink="/saved-jobs" routerLinkActive="active">Offres Sauvegardées</a>
+    </nav>
+  </div>
+</header>
+<main class="app-main">
+  <router-outlet />
+</main>

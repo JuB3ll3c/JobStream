@@ -1,0 +1,81 @@
+<aside class="filters-container" [formGroup]="filterForm">
+  <!-- Job Type Filter -->
+  <div class="filter-section">
+    <h3 class="filter-title">Job Type</h3>
+    <div class="filter-chips">
+      @for (type of jobTypes; track type) {
+        <button 
+          type="button"
+          class="filter_chip"
+          [class.active]="filterForm.get('jobType')?.value === type"
+          (click)="onJobTypeSelect(type)"
+        >
+          {{ type }}
+        </button>
+      }
+    </div>
+  </div>
+
+  <!-- Experience Level Filter -->
+  <div class="filter-section">
+    <h3 class="filter-title">Experience Level</h3>
+    <div class="filter-chips">
+      @for (level of experienceLevels; track level) {
+        <button 
+          type="button"
+          class="filter_chip"
+          [class.active]="filterForm.get('experienceLevel')?.value === level"
+          (click)="onExperienceLevelSelect(level)"
+        >
+          {{ level }}
+        </button>
+      }
+    </div>
+  </div>
+
+  <!-- Salary Range Filter -->
+  <div class="filter-section">
+    <h3 class="filter-title">Salary Range</h3>
+    <div class="salary-range">
+      <div class="salary-inputs">
+        <div class="salary-input-group">
+          <span class="currency">$</span>
+          <input 
+            type="number" 
+            id="salary-min"
+            class="salary-input"
+            formControlName="salaryMin"
+            (change)="onSalaryMinChange()"
+            [min]="salaryOptions.MINIMUM_SALARY"
+            [max]="salaryOptions.MAXIMUM_SALARY"
+            [step]="salaryOptions.SALARY_STEP"
+          />
+          <span class="salary-unit">k</span>
+        </div>
+        <span class="salary-separator">to</span>
+        <div class="salary-input-group">
+          <span class="currency">$</span>
+          <input 
+            type="number" 
+            id="salary-max"
+            class="salary-input"
+            formControlName="salaryMax"
+            (change)="onSalaryMaxChange()"
+            [min]="salaryOptions.MINIMUM_SALARY"
+            [max]="salaryOptions.MAXIMUM_SALARY"
+            [step]="salaryOptions.SALARY_STEP"
+          />
+          <span class="salary-unit">k</span>
+        </div>
+      </div>
+      @if (salaryRangeError) {
+        <span class="error-text">Min must be less than max</span>
+      }
+    </div>
+  </div>
+
+  <!-- Clear Filters -->
+  <button type="button" class="clear-filters-button" (click)="clearFilters()">
+    Clear all filters
+  </button>
+</aside>

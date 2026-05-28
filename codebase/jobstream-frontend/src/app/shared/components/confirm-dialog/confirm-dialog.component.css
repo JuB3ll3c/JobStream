@@ -1,0 +1,95 @@
+.dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(25, 28, 30, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.dialog-container {
+  background: var(--surface-container-lowest);
+  border-radius: var(--radius-xl);
+  padding: 1.5rem;
+  min-width: 360px;
+  max-width: 480px;
+  box-shadow: var(--shadow-ambient);
+  animation: slideUp 0.2s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dialog-header h2 {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--on-surface);
+  margin: 0 0 0.75rem 0;
+}
+
+.dialog-body p {
+  color: var(--on-surface-variant);
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  margin: 0 0 1.5rem 0;
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+.btn-cancel,
+.btn-confirm {
+  padding: 0.625rem 1.25rem;
+  border-radius: var(--radius-md);
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-cancel {
+  background: transparent;
+  border: 1px solid var(--outline-variant);
+  color: var(--on-surface-variant);
+}
+
+.btn-cancel:hover {
+  background: var(--surface-container);
+}
+
+.btn-confirm {
+  background: var(--error);
+  border: none;
+  color: var(--on-error);
+}
+
+.btn-confirm:hover {
+  opacity: 0.9;
+}

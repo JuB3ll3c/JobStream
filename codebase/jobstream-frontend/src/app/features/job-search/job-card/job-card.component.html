@@ -1,0 +1,75 @@
+<article class="job-card" (click)="viewJobDetails()">
+  <div class="job-card-header">
+    <div class="job-title-section">
+      <h2 class="job-title">{{ job().title }}</h2>
+      @if (extractValueForTemplate(job().contractType)) {
+        <span class="job-badge closing-soon">Closing Soon</span>
+      }
+    </div>
+    <button 
+      class="save-button"
+      [class.saved]="isSavedValue"
+      [disabled]="isSaving()"
+      (click)="onSaveJob($event)"
+      [attr.aria-label]="isSavedValue ? 'Remove from saved' : (isSaving() ? 'Saving...' : 'Save job')"
+    >
+      <span class="material-icons">
+        @if (isSaving()) {
+          hourglass_empty
+        } @else {
+          {{ isSavedValue ? 'bookmark' : 'bookmark_border' }}
+        }
+      </span>
+    </button>
+  </div>
+
+  <div class="job-company">
+    <span class="company-name">{{ job().company }}</span>
+  </div>
+
+  <div class="job-meta">
+    @if (job().location) {
+      <div class="meta-item">
+        <span class="material-icons">location_on</span>
+        <span>{{ job().location }}</span>
+      </div>
+    }
+    <div class="meta-item">
+      <span class="material-icons">schedule</span>
+      <span>{{ getTimeAgo() }}</span>
+    </div>
+  </div>
+
+  <div class="job-salary">
+    <span class="salary-badge">{{ formatSalary() }}</span>
+  </div>
+
+  @if (extractValueForTemplate(job().description); as desc) {
+    <p class="job-description">
+      {{ desc | slice:0:150 }}{{ desc.length > 150 ? '...' : '' }}
+    </p>
+  }
+
+  @if (extractValueForTemplate(job().requirements); as reqs) {
+    @if (reqs.length > 0) {
+      <div class="job-skills">
+        @for (skill of reqs.slice(0, 3); track skill) {
+          <span class="skill-tag">{{ skill }}</span>
+        }
+        @if (reqs.length > 3) {
+          <span class="skill-more">+{{ reqs.length - 3 }} more</span>
+        }
+      </div>
+    }
+  }
+
+  <div class="job-actions">
+    <button class="apply-button" (click)="onApply($event)">
+      <span class="material-icons">open_in_new</span>
+      Apply Now
+    </button>
+    <button class="details-button" (click)="viewJobDetails()">
+      View Details
+    </button>
+  </div>
+</article>
