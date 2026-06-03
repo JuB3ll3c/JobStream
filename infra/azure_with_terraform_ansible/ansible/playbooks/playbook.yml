@@ -1,0 +1,20 @@
+- hosts: all
+  become: yes
+  roles:
+    - common
+
+- hosts: kafka_brokers
+  become: yes
+  roles:
+    - kafka
+# DB is on the app host in azure due to restriction with free account
+#- hosts: db
+#  become: yes
+#  roles:
+#    - postgres
+#
+- hosts: app
+  become: yes
+  roles:
+    - postgres
+    - app-deployment

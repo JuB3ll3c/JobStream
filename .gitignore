@@ -30,3 +30,7 @@ out/
 /.tmp/
 infra/local_with_docker/.env
 /infra/local_with_vagrant_ansible/.vagrant/
+/infra/azure_with_terraform_ansible/.terraform/
+/infra/azure_with_terraform_ansible/.terraform.lock.hcl
+/infra/azure_with_terraform_ansible/terraform.tfstate
+/infra/azure_with_terraform_ansible/terraform.tfstate.backup

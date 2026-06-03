@@ -1,0 +1,47 @@
+name: Build and Push Docker Images
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Format the repository name in lowercase.
+        id: string
+        run: |
+          echo "repo=${GITHUB_REPOSITORY,,}" >> $GITHUB_OUTPUT
+
+      - name: Build and push Backend Image
+        uses: docker/build-push-action@v5
+        with:
+          context: codebase/dashboard-service
+          push: true
+          tags: ghcr.io/${{ steps.string.outputs.repo }}/dashboard-service:latest
+
+      - name: Build and push ai-analyzer Image
+        uses: docker/build-push-action@v5
+        with:
+          context: codebase/ai-analyzer-service
+          push: true
+          tags: ghcr.io/${{ steps.string.outputs.repo }}/ai-analyzer-service:latest
+
+      - name: Build and push Frontend Image
+        uses: docker/build-push-action@v5
+        with:
+          context: codebase/jobstream-frontend
+          push: true
+          tags: ghcr.io/${{ steps.string.outputs.repo }}/frontend:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

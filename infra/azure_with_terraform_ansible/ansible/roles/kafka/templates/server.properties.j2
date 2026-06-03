@@ -1,0 +1,22 @@
+# 1. Identifiant unique (On force l'ID à 1 puisqu'il est tout seul)
+node.id=1
+process.roles=broker,controller
+
+# 2. Configuration du réseau
+listeners=PLAINTEXT://:9092,CONTROLLER://:9093
+inter.broker.listener.name=PLAINTEXT
+# On utilise l'IP privée de la machine pour qu'elle écoute correctement sur le réseau Azure
+advertised.listeners=PLAINTEXT://{{ ansible_default_ipv4.address }}:9092
+controller.listener.names=CONTROLLER
+
+listener.security.protocol.map=PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
+
+# 3. La liste des contrôleurs KRaft (Seulement lui-même, sur le port 9093)
+controller.quorum.voters=1@10.0.2.20:9093
+
+# 4. Stockage et Réplication (Ajusté pour 1 seul broker)
+log.dirs=/var/lib/kafka-logs
+num.partitions=3
+offsets.topic.replication.factor=1
+transaction.state.log.replication.factor=1
+transaction.state.log.min.isr=1

@@ -1,0 +1,31 @@
+- name: Load secret from postgres
+  include_vars:
+    file: ../../postgres/vars/secret.yml
+
+- name: Load secret from dashboard-service
+  include_vars:
+    file: secret.yml
+
+- name: Create app directory
+  file:
+    path: /opt/myapp
+    state: directory
+    mode: '0755'
+
+- name: Connect to GitHub Container Registry
+  docker_login:
+    registry_url: ghcr.io
+    username: "{{ github_user }}"
+    password: "{{ github_token }}"
+
+- name: Deploy docker-compose.yml
+  template:
+    src: docker-compose.yml.j2
+    dest: /opt/myapp/docker-compose.yml
+    mode: '0644'
+
+- name: Run docker-compose
+  docker_compose_v2:
+    project_src: /opt/myapp
+    state: present
+    pull: always

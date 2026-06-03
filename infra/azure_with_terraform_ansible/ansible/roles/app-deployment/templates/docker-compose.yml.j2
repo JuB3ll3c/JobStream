@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  backend-api:
+    image: ghcr.io/jub3ll3c/jobstream/dashboard-service:latest
+    container_name: dashboard-service
+    restart: always
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://{{ hostvars['app-server']['ansible_default_ipv4']['address'] }}:5432/{{ db_name }}
+      - SPRING_DATASOURCE_USERNAME={{ db_user }}
+      - SPRING_DATASOURCE_PASSWORD={{ db_password }}
+      - KAFKA_BOOTSTRAP_SERVERS={{ hostvars['kafka-server']['ansible_default_ipv4']['address'] }}:9092
+      - ADZUNA_APP_ID={{ adzuna_app_id }}
+      - ADZUNA_API_KEY={{ adzuna_api_key }}
+
+  ia-analyzer:
+      image: ghcr.io/jub3ll3c/jobstream/ai-analyzer-service:latest
+      container_name: ia-analyzer
+      restart: always
+      ports:
+        - "8081:8081"
+      environment:
+        - KAFKA_BOOTSTRAP_SERVERS={{ hostvars['kafka-server']['ansible_default_ipv4']['address'] }}:9092
+        - OPEN_ROUTER_API_KEY={{ open_router_api_key }}
+        - AI_MODEL={{ ai_model }}
+
+  frontend:
+      image: ghcr.io/jub3ll3c/jobstream/jobstream-frontend:latest
+      container_name: jobstream-frontend
+      restart: always
+      ports:
+        - "80:80"
+      depends_on:
+        - ia-analyzer

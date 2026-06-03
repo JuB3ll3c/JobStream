@@ -1,0 +1,41 @@
+- name: Install Java 17 (Required JVM for Kafka)
+  ansible.builtin.apt:
+    name: openjdk-17-jdk
+    state: present
+    update_cache: yes
+
+- name: Download Apache Kafka archive
+  ansible.builtin.get_url:
+    url: https://archive.apache.org/dist/kafka/3.6.1/kafka_2.13-3.6.1.tgz
+    dest: /tmp/kafka.tgz
+    mode: '0644'
+
+- name: Create Kafka installation directory
+  ansible.builtin.file:
+    path: /opt/kafka
+    state: directory
+    mode: '0755'
+
+- name: Extract Kafka archive
+  ansible.builtin.unarchive:
+    src: /tmp/kafka.tgz
+    dest: /opt/kafka
+    remote_src: yes
+    extra_opts: [--strip-components=1]
+
+- name: Create directory for KRaft data and logs
+  ansible.builtin.file:
+    path: /var/lib/kafka-logs
+    state: directory
+    mode: '0755'
+
+- name: Deploy Kafka server configuration template
+  ansible.builtin.template:
+    src: server.properties.j2
+    dest: /opt/kafka/config/server.properties
+    mode: '0644'
+
+- name: Format Kafka storage directory with KRaft Cluster ID
+  ansible.builtin.command:
+    cmd: /opt/kafka/bin/kafka-storage.sh format -t "4L62ydwWSOywJaGiswE5OA" -c /opt/kafka/config/server.properties
+    creates: /var/lib/kafka-logs/meta.properties
