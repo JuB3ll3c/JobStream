@@ -1,19 +1,15 @@
-# Étape 1 : Build de l'application
 FROM maven:3.9-eclipse-temurin-25-alpine AS build
 WORKDIR /app
 
-COPY dashboard-service/pom.xml ./dashboard-service/pom.xml
-WORKDIR /app/dashboard-service
-RUN mvn dependency:go-offline -B
+COPY codebase/dashboard-service/pom.xml ./dashboard-service/
+RUN mvn -f dashboard-service/pom.xml dependency:go-offline -B
 
-WORKDIR /app
-COPY openapi/openapi.yml ./openapi/openapi.yml
-COPY dashboard-service/src ./dashboard-service/src
+COPY openapi/openapi.yml ./openapi/
+COPY codebase/dashboard-service/src ./dashboard-service/src
 
-WORKDIR /app/dashboard-service
-RUN mvn clean package -DskipTests
+RUN mvn -f dashboard-service/pom.xml clean package -DskipTests
 
-# Étape 2 : Image de runtime JRE Java 25
+
 FROM eclipse-temurin:25-jre-alpine
 WORKDIR /app
 
