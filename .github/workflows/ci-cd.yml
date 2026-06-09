@@ -26,21 +26,24 @@ jobs:
       - name: Build and push Backend Image
         uses: docker/build-push-action@v5
         with:
-          context: codebase/dashboard-service
+          context: .
+          file: codebase/dashboard-service/Dockerfile
           push: true
           tags: ghcr.io/${{ steps.string.outputs.repo }}/dashboard-service:latest
 
       - name: Build and push ai-analyzer Image
         uses: docker/build-push-action@v5
         with:
-          context: codebase/ai-analyzer-service
+          context: .
+          file: codebase/ai-analyzer-service/Dockerfile
           push: true
           tags: ghcr.io/${{ steps.string.outputs.repo }}/ai-analyzer-service:latest
 
       - name: Build and push Frontend Image
         uses: docker/build-push-action@v5
         with:
-          context: codebase/jobstream-frontend
+          context: .
+          file: codebase/jobstream-frontend/Dockerfile
           push: true
           tags: ghcr.io/${{ steps.string.outputs.repo }}/frontend:latest
           cache-from: type=gha
