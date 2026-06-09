@@ -21,12 +21,6 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Terraform Init & Apply
-        run: |
-          cd infra/azure_with_terraform_ansible/terraform/
-          terraform init
-          terraform apply -auto-approve
-
       - name: Configure SSH key
         run: |
           mkdir -p ~/.ssh
@@ -41,6 +35,12 @@ jobs:
       - name: Configure password Ansible vault
         run: |
           echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > .vault_pass
+
+      - name: Terraform Init & Apply
+        run: |
+          cd infra/azure_with_terraform_ansible/terraform/
+          terraform init
+          terraform apply -auto-approve
 
       - name: Run Ansible playbook
         run: |
