@@ -5,7 +5,7 @@ WORKDIR /app
 COPY codebase/ai-analyzer-service/pom.xml ./ai-analyzer-service/pom.xml
 RUN mvn dependency:go-offline -B
 
-COPY openapi/openapi.yml ./openapi/openapi.yml
+COPY codebase/openapi/openapi.yml ./openapi/openapi.yml
 COPY codebase/ai-analyzer-service/src ./ai-analyzer-service/src
 
 RUN mvn -f ai-analyzer-service/pom.xml clean package -DskipTests

@@ -4,7 +4,7 @@ WORKDIR /app
 COPY codebase/dashboard-service/pom.xml ./dashboard-service/
 RUN mvn -f dashboard-service/pom.xml dependency:go-offline -B
 
-COPY openapi/openapi.yml ./openapi/
+COPY codebase/openapi/openapi.yml ./openapi/
 COPY codebase/dashboard-service/src ./dashboard-service/src
 
 RUN mvn -f dashboard-service/pom.xml clean package -DskipTests
