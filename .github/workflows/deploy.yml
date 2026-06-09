@@ -32,6 +32,10 @@ jobs:
           mkdir -p ~/.ssh
           echo "${{ secrets.AZURE_VM_SSH_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
+          
+          echo "${{ secrets.AZURE_VM_SSH_PUBLIC_KEY }}" > ~/.ssh/id_rsa.pub
+          chmod 644 ~/.ssh/id_rsa.pub
+          
           echo "StrictHostKeyChecking no" >> ~/.ssh/config
 
       - name: Configure password Ansible vault
