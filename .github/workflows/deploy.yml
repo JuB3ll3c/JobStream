@@ -39,7 +39,11 @@ jobs:
       - name: Terraform Init & Apply
         run: |
           cd infra/azure_with_terraform_ansible/terraform/
-          terraform init
+          terraform init \
+            -backend-config="resource_group_name=rg-terraform-state" \
+            -backend-config="storage_account_name=tfstatejobstream" \
+            -backend-config="container_name=tfstate" \
+            -backend-config="key=prod.terraform.tfstate"
           terraform apply -auto-approve
 
       - name: Run Ansible playbook
