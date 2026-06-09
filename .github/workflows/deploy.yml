@@ -45,7 +45,7 @@ jobs:
       - name: Run Ansible playbook
         run: |
           pip install ansible
-          ansible-playbook -i hosts.yml playbook.yml --vault-password-file .vault_pass
+          ansible-playbook -i hosts.yml ansible/playbooks/playbook.yml --vault-password-file .vault_pass
 
       - name: Delete temp files
         if: always()
