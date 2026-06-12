@@ -45,8 +45,7 @@ jobs:
             -backend-config="resource_group_name=rg-terraform-state" \
             -backend-config="storage_account_name=tfstatejobstream2026" \
             -backend-config="container_name=tfstate" \
-            -backend-config="key=prod.terraform.tfstate"
-            -backend-config="storage_account_key=${ACCOUNT_KEY}"
+            -backend-config="key=${ACCOUNT_KEY}"
           terraform apply -auto-approve
 
       - name: Run Ansible playbook
