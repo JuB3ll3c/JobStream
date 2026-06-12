@@ -36,12 +36,29 @@ jobs:
         run: |
           echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > .vault_pass
 
+      - name: 📦 Ensure Terraform Backend Storage Exists
+        run: |
+          az group create --name rg-terraform-state --location westeurope
+          
+          az storage account create \
+            --name tfstatejobstream2026 \
+            --resource-group rg-terraform-state \
+            --location westeurope \
+            --sku Standard_LRS \
+            --allow-blob-public-access false \
+            --output none
+          
+          az storage container create \
+            --name tfstate \
+            --account-name tfstatejobstream2026 \
+            --output none
+
       - name: Terraform Init & Apply
         run: |
           cd infra/azure_with_terraform_ansible/terraform/
           terraform init \
             -backend-config="resource_group_name=rg-terraform-state" \
-            -backend-config="storage_account_name=tfstatejobstream" \
+            -backend-config="storage_account_name=tfstatejobstream2026" \
             -backend-config="container_name=tfstate" \
             -backend-config="key=prod.terraform.tfstate"
           terraform apply -auto-approve
