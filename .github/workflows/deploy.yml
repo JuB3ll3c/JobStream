@@ -40,6 +40,7 @@ jobs:
         run: |
           cd infra/azure_with_terraform_ansible/terraform/
           ACCOUNT_KEY=$(az storage account keys list --resource-group rg-terraform-state --account-name tfstatejobstream2026 --query "[0].value" -o tsv)
+          echo ${ACCOUNT_KEY}
           terraform init \
             -backend-config="resource_group_name=rg-terraform-state" \
             -backend-config="storage_account_name=tfstatejobstream2026" \
