@@ -9,6 +9,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 @Component
 @Log4j2
@@ -60,8 +61,11 @@ public class AdzunaMapper {
         String postedDate = getString(jobData, "created");
 
         // Category (as requirements/tags)
-        Map<String, Object> categoryData = (Map<String, Object>) jobData.get("category");
-        String category = categoryData != null ? getString(categoryData, "label") : null;
+        Object categoryObj = jobData.get("category");
+        String category = null;
+        if (categoryObj instanceof Map) {
+            category = getString((Map<String, Object>) categoryObj, "label");
+        }
 
         JobDto job = new JobDto(externalId, title, company, location);
         job.setDescription(description);
@@ -78,7 +82,6 @@ public class AdzunaMapper {
                 job.setPostedDate(date);
             } catch (Exception e) {
                 log.debug("Date Adzuna non parsable: '{}'", postedDate);
-                return null;
             }
         }
 
@@ -104,6 +107,7 @@ public class AdzunaMapper {
 
         List<JobDto> jobs = jobDataList.stream()
                 .map(this::mapToJobDto)
+                .filter(Objects::nonNull)
                 .toList();
 
         // Adzuna ne retourne pas toujours un total, on utilise count ou jobs.size()
