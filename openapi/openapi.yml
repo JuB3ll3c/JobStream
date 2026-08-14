@@ -164,17 +164,17 @@ components:
     ErrorResponse:
       type: object
       properties:
-        code:
+        status:
+          type: integer
+        error:
           type: string
-          example: "NOT_FOUND"
+          example: "Job not found"
         message:
           type: string
           example: "Job not found"
-        details:
+        date:
           type: string
-        timestamp:
-          type: string
-          format: date-time
+          format: date
 
   # ----------------------------------------------------------------------
   # Responses

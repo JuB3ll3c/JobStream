@@ -146,8 +146,6 @@
 								<interfaceOnly>true</interfaceOnly>
 								<useSpringBoot3>true</useSpringBoot3>
 								<useTags>true</useTags>
-								<skipDefaultInterface>true</skipDefaultInterface> <!-- Génère de vraies méthodes abstraites sans corps default -->
-								<useDelegatePattern>false</useDelegatePattern>
 							</configOptions>
 						</configuration>
 					</execution>
