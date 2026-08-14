@@ -74,6 +74,30 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '500':
           $ref: '#/components/responses/InternalError'
+
+  /api/jobs/{externalId}:
+    get:
+      summary: Détail d'un job externe
+      operationId: getJobById
+      tags:
+        - Jobs
+      parameters:
+        - name: externalId
+          in: path
+          required: true
+          description: ID externe du job (Adzuna)
+          schema:
+            type: string
+          example: "job_123456"
+      responses:
+        '200':
+          description: Détails du job
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobDto'
+        '404':
+          $ref: '#/components/responses/NotFound'
 # ============================================================================
 # COMPONENTS - Schemas & Responses
 # ============================================================================

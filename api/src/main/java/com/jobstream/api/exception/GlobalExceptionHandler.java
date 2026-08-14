@@ -71,6 +71,14 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Gère les erreurs 404 NOT FOUND
+     */
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleNotFound(ResourceNotFoundException ex) {
+        return build(HttpStatus.NOT_FOUND, "Offre non trouvée", ex.getMessage());
+    }
+
+    /**
      * Gère toutes les autres exceptions non prévues
      */
     @ExceptionHandler(Exception.class)

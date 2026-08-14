@@ -1,6 +1,7 @@
 package com.jobstream.api.controller;
 
 import com.jobstream.api.service.JobService;
+import com.jobstream.dto.JobDto;
 import com.jobstream.dto.JobSearchResponse;
 import com.jobstream.endpoint.JobsApi;
 import lombok.AllArgsConstructor;
@@ -38,11 +39,16 @@ public class JobController implements JobsApi {
             Integer limit,
             String location) {
 
-        log.info("Recherche d'offres: q={}, page={}, limit={}, location={}",
+        log.debug("Recherche d'offres: q={}, page={}, limit={}, location={}",
                 query, page, limit, location);
 
         JobSearchResponse response = jobService.searchJobs(query, page, limit, location);
 
         return ResponseEntity.ok(response);
+    }
+
+    @Override
+    public ResponseEntity<JobDto> getJobById(String externalId) {
+        return ResponseEntity.ok(jobService.getJobById(externalId));
     }
 }

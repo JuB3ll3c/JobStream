@@ -1,6 +1,7 @@
 package com.jobstream.api.service;
 
 import com.jobstream.api.client.AdzunaClient;
+import com.jobstream.api.exception.ResourceNotFoundException;
 import com.jobstream.api.mapper.AdzunaMapper;
 import com.jobstream.dto.JobDto;
 import com.jobstream.dto.JobSearchResponse;
@@ -14,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -58,5 +60,36 @@ class JobServiceTest {
         jobService.searchJobs("java", null, null, null);
 
         verify(adzunaClient).callAdzunaApi("java", null, null, null);
+    }
+
+    @Test
+    void getJobById_shouldReturnJobWhenIdMatches() {
+        Map<String, Object> rawResponse = Map.of("count", 1);
+        JobDto job = new JobDto("job_1", "Développeur Java", "TechCorp", "Paris");
+        JobSearchResponse mapped = new JobSearchResponse();
+        mapped.setJobs(List.of(job));
+
+        when(adzunaClient.callAdzunaApi("job_1", null, null, null)).thenReturn(rawResponse);
+        when(adzunaMapper.toJobSearchResponse(rawResponse)).thenReturn(mapped);
+
+        JobDto result = jobService.getJobById("job_1");
+
+        assertThat(result).isSameAs(job);
+        verify(adzunaClient).callAdzunaApi("job_1", null, null, null);
+        verify(adzunaMapper).toJobSearchResponse(rawResponse);
+    }
+
+    @Test
+    void getJobById_shouldThrowNotFoundWhenNoIdMatches() {
+        Map<String, Object> rawResponse = Map.of("results", List.of());
+        JobSearchResponse mapped = new JobSearchResponse();
+        mapped.setJobs(List.of(new JobDto("job_999", "Autre offre", "Boite", "Lyon")));
+
+        when(adzunaClient.callAdzunaApi("job_1", null, null, null)).thenReturn(rawResponse);
+        when(adzunaMapper.toJobSearchResponse(rawResponse)).thenReturn(mapped);
+
+        assertThatThrownBy(() -> jobService.getJobById("job_1"))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("job_1");
     }
 }

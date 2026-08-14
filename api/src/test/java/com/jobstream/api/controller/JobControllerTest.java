@@ -1,6 +1,7 @@
 package com.jobstream.api.controller;
 
 import com.jobstream.api.exception.ExternalApiException;
+import com.jobstream.api.exception.ResourceNotFoundException;
 import com.jobstream.api.service.JobService;
 import com.jobstream.dto.JobDto;
 import com.jobstream.dto.JobSearchResponse;
@@ -117,5 +118,33 @@ class JobControllerTest {
                 .andExpect(status().isInternalServerError())
                 .andExpect(jsonPath("$.status").value(500))
                 .andExpect(jsonPath("$.error").value("Erreur interne du serveur"));
+    }
+
+    @Test
+    void getJobById_shouldReturn200WithJob() throws Exception {
+        JobDto job = new JobDto("job_1", "Développeur Java", "TechCorp", "Paris, France");
+        job.setDescription("Description complète");
+        job.setSalaryMin(50000);
+        job.setSalaryMax(80000);
+
+        when(jobService.getJobById("job_1")).thenReturn(job);
+
+        mockMvc.perform(get("/api/jobs/job_1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.externalId").value("job_1"))
+                .andExpect(jsonPath("$.title").value("Développeur Java"))
+                .andExpect(jsonPath("$.company").value("TechCorp"))
+                .andExpect(jsonPath("$.location").value("Paris, France"));
+    }
+
+    @Test
+    void getJobById_shouldReturn404WhenNotFound() throws Exception {
+        when(jobService.getJobById("job_unknown"))
+                .thenThrow(new ResourceNotFoundException("Offre introuvable avec l'id: job_unknown"));
+
+        mockMvc.perform(get("/api/jobs/job_unknown"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404))
+                .andExpect(jsonPath("$.error").value("Offre non trouvée"));
     }
 }
