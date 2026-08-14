@@ -2,6 +2,7 @@ package com.jobstream.api.mapper;
 
 import com.jobstream.dto.JobDto;
 import com.jobstream.dto.JobSearchResponse;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
@@ -10,11 +11,12 @@ import java.util.List;
 import java.util.Map;
 
 @Component
+@Log4j2
 public class AdzunaMapper {
     /**
      * Map un job Adzuna vers JobDto
      */
-    @SuppressWarnings("unchecked")
+
     public JobDto mapToJobDto(Map<String, Object> jobData) {
         // ID externe
         String externalId = getString(jobData, "id");
@@ -75,7 +77,8 @@ public class AdzunaMapper {
                 LocalDate date = LocalDate.parse(dateStr);
                 job.setPostedDate(date);
             } catch (Exception e) {
-                // Ignore parsing errors
+                log.debug("Date Adzuna non parsable: '{}'", postedDate);
+                return null;
             }
         }
 

@@ -5,6 +5,7 @@ import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
@@ -39,7 +40,6 @@ public class AdzunaClient {
 
         try {
             log.debug("Calling Adzuna API: query={}, page={}, limit={}", query, pageNum, limitNum);
-
             Map<String, Object> response = restClient.get()
                     .uri(uriBuilder -> {
                         var builder = uriBuilder
@@ -72,7 +72,7 @@ public class AdzunaClient {
         } catch (RestClientException e) {
             long duration = System.currentTimeMillis() - startTime;
             log.error("Erreur lors de l'appel à Adzuna API après {}ms: {}", duration, e.getMessage());
-            throw new ExternalApiException("Adzuna", "Erreur lors de la recherche d'offres", 502, e);
+            throw new ExternalApiException("Adzuna", "Erreur lors de la recherche d'offres", HttpStatus.BAD_GATEWAY.value(), e);
         }
     }
 }

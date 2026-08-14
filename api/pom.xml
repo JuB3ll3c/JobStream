@@ -139,13 +139,21 @@
 						<configuration>
 							<inputSpec>${project.basedir}/../openapi/openapi.yml</inputSpec>
 							<generatorName>spring</generatorName>
-							<library>spring-boot</library>
 							<modelPackage>com.jobstream.dto</modelPackage>
 							<apiPackage>com.jobstream.endpoint</apiPackage>
+
+							<typeMappings>
+								<typeMapping>DateTime=LocalDateTime</typeMapping>
+							</typeMappings>
+
+							<importMappings>
+								<importMapping>LocalDateTime=java.time.LocalDateTime</importMapping>
+							</importMappings>
 							<configOptions>
 								<interfaceOnly>true</interfaceOnly>
 								<useSpringBoot3>true</useSpringBoot3>
 								<useTags>true</useTags>
+								<skipDefaultInterface>true</skipDefaultInterface>
 							</configOptions>
 						</configuration>
 					</execution>

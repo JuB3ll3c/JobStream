@@ -1,5 +1,6 @@
 package com.jobstream.api.exception;
 
+import com.jobstream.dto.ErrorResponse;
 import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -9,8 +10,8 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
-import com.jobstream.dto.ErrorResponse;
-import java.time.LocalDate;
+
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -29,14 +30,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleExternalApiException(ExternalApiException ex) {
         log.error("Erreur API externe [{}]: {}", ex.getApiName(), ex.getMessage(), ex);
 
-
-        ErrorResponse error = new ErrorResponse();
-        error.setStatus(HttpStatus.BAD_GATEWAY.value());
-        error.setError("Erreur lors de la communication avec le service externe");
-        error.setMessage(ex.getMessage());
-        error.setDate(LocalDate.now());
-
-        return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(error);
+        return build(HttpStatus.BAD_GATEWAY, "Erreur lors de la communication avec le service externe", ex.getMessage());
     }
 
     /**
@@ -50,13 +44,7 @@ public class GlobalExceptionHandler {
                 .map(v -> v.getPropertyPath() + ": " + v.getMessage())
                 .toList();
 
-        ErrorResponse error = new ErrorResponse();
-        error.setStatus(HttpStatus.BAD_REQUEST.value());
-        error.setError("Paramètres de requête invalides");
-        error.setMessage(String.join(", ", violations));
-        error.setDate(LocalDate.now());
-
-        return ResponseEntity.badRequest().body(error);
+        return build(HttpStatus.BAD_REQUEST, "Paramètres de requête invalides", String.join(", ", violations));
     }
 
     /**
@@ -69,13 +57,7 @@ public class GlobalExceptionHandler {
         String message = String.format("Le paramètre '%s' a une valeur invalide: %s",
                 ex.getName(), ex.getValue());
 
-        ErrorResponse error = new ErrorResponse();
-        error.setStatus(HttpStatus.BAD_REQUEST.value());
-        error.setError("Type de paramètre invalide");
-        error.setMessage(message);
-        error.setDate(LocalDate.now());
-
-        return ResponseEntity.badRequest().body(error);
+        return build(HttpStatus.BAD_REQUEST, "Type de paramètre invalide", message);
     }
 
     /**
@@ -85,13 +67,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleMessageNotReadable(HttpMessageNotReadableException ex) {
         log.error("Erreur de parsing JSON: {}", ex.getMessage(), ex);
 
-        ErrorResponse error = new ErrorResponse();
-        error.setStatus(HttpStatus.BAD_REQUEST.value());
-        error.setError("Format de requête invalide");
-        error.setMessage("Le corps de la requête n'est pas un JSON valide");
-        error.setDate(LocalDate.now());
-
-        return ResponseEntity.badRequest().body(error);
+        return build(HttpStatus.BAD_REQUEST, "Format de requête invalide", "Le corps de la requête n'est pas un JSON valide");
     }
 
     /**
@@ -101,12 +77,15 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleGenericException(Exception ex) {
         log.error("Erreur inattendue: {}", ex.getMessage(), ex);
 
-        ErrorResponse error = new ErrorResponse();
-        error.setStatus(HttpStatus.INTERNAL_SERVER_ERROR.value());
-        error.setError("Erreur interne du serveur");
-        error.setMessage("Une erreur inattendue s'est produite");
-        error.setDate(LocalDate.now());
+        return build(HttpStatus.INTERNAL_SERVER_ERROR, "Erreur interne du serveur", "Une erreur inattendue s'est produite");
+    }
 
-        return ResponseEntity.internalServerError().body(error);
+    private ResponseEntity<ErrorResponse> build(HttpStatus status, String error, String message) {
+        ErrorResponse err = new ErrorResponse();
+        err.setStatus(status.value());
+        err.setError(error);
+        err.setMessage(message);
+        err.setDate(LocalDateTime.now());
+        return ResponseEntity.status(status).body(err);
     }
 }

@@ -127,17 +127,7 @@ components:
           items:
             type: string
           description: Liste des exigences
-
           example: ["Java 17", "Spring Boot", "PostgreSQL"]
-        benefits:
-          type: array
-          items:
-            type: string
-          description: Avantages proposés
-
-          example: ["RTT", "Télétravail", "Mutuelle"]
-
-
 
     # ----------------------------------------------------------------------
     # Response DTOs
@@ -174,7 +164,7 @@ components:
           example: "Job not found"
         date:
           type: string
-          format: date
+          format: date-time
 
   # ----------------------------------------------------------------------
   # Responses
