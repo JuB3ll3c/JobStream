@@ -1,0 +1,221 @@
+openapi: 3.0.3
+info:
+  title: JobStream API
+  version: 1.0.0
+  description: |
+    API REST pour la recherche et gestion d'offres d'emploi.
+    Contrats partagés entre Backend (Spring Boot) et Frontend (Angular).
+    
+    **Approche API-First**: Ce fichier est la source de vérité.
+    Les DTOs et clients sont générés automatiquement à partir de cette spec.
+servers:
+  - url: http://localhost:8080
+    description: Development server
+
+# ============================================================================
+# PATHS - Endpoints RESTful
+# ============================================================================
+paths:
+  # --------------------------------------------------------------------------
+  # Jobs - Recherche externe (Adzuna)
+  # --------------------------------------------------------------------------
+  /api/jobs:
+    get:
+      summary: Rechercher des offres d'emploi
+      operationId: searchJobs
+      tags:
+        - Jobs
+      parameters:
+        - name: query
+          in: query
+          required: true
+          description: Mot-clé de recherche
+          schema:
+            type: string
+          example: "développeur java paris"
+        - name: page
+          in: query
+          required: false
+          description: Numéro de page
+          schema:
+            type: integer
+            default: 1
+            example: 1
+        - name: limit
+          in: query
+          required: false
+          description: Nombre de résultats par page
+          schema:
+            type: integer
+            default: 20
+            example: 20
+        - name: location
+          in: query
+          required: false
+          description: Localisation de recherche
+          schema:
+            type: string
+            example: "paris"
+      responses:
+        '200':
+          description: Liste des jobs trouvés
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobSearchResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
+# ============================================================================
+# COMPONENTS - Schemas & Responses
+# ============================================================================
+components:
+  schemas:
+    # ----------------------------------------------------------------------
+    # Job DTOs (externes - Adzuna)
+    # ----------------------------------------------------------------------
+    JobDto:
+      type: object
+      description: Job trouvé via l'API externe (non sauvegardé)
+      required:
+        - externalId
+        - title
+        - company
+        - location
+      properties:
+        externalId:
+          type: string
+          description: ID externe (Adzuna)
+          example: "job_123456"
+        title:
+          type: string
+          example: "Développeur Java Senior"
+        company:
+          type: string
+          example: "TechCorp France"
+        location:
+          type: string
+          example: "Paris, France"
+        description:
+          type: string
+          description: Description complète de l'offre
+          example: "Nous cherchons un développeur Java expérimenté..."
+        salaryMin:
+          type: integer
+          description: Salaire minimum
+          example: 50000
+        salaryMax:
+          type: integer
+          description: Salaire maximum
+          example: 80000
+        contractType:
+          type: string
+          description: Type de contrat
+          example: "CDI"
+        postedDate:
+          type: string
+          format: date
+          description: Date de publication
+          example: "2026-03-20"
+        jobUrl:
+          type: string
+          description: URL originale de l'offre
+          example: "https://example.com/job/123"
+        requirements:
+          type: array
+          items:
+            type: string
+          description: Liste des exigences
+
+          example: ["Java 17", "Spring Boot", "PostgreSQL"]
+        benefits:
+          type: array
+          items:
+            type: string
+          description: Avantages proposés
+
+          example: ["RTT", "Télétravail", "Mutuelle"]
+
+
+
+    # ----------------------------------------------------------------------
+    # Response DTOs
+    # ----------------------------------------------------------------------
+    JobSearchResponse:
+      type: object
+      properties:
+        jobs:
+          type: array
+          items:
+            $ref: '#/components/schemas/JobDto'
+        total:
+          type: integer
+          description: Nombre total de résultats
+          example: 150
+        count:
+          type: integer
+          description: Nombre de résultats retournés
+          example: 15
+
+    # ----------------------------------------------------------------------
+    # Error DTOs
+    # ----------------------------------------------------------------------
+    ErrorResponse:
+      type: object
+      properties:
+        code:
+          type: string
+          example: "NOT_FOUND"
+        message:
+          type: string
+          example: "Job not found"
+        details:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+
+  # ----------------------------------------------------------------------
+  # Responses
+  # ----------------------------------------------------------------------
+  responses:
+    BadRequest:
+      description: Requête invalide
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            code: "BAD_REQUEST"
+            message: "Invalid parameters"
+
+    NotFound:
+      description: Ressource non trouvée
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            code: "NOT_FOUND"
+            message: "Job not found"
+
+    Conflict:
+      description: Ressource déjà existante
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            code: "CONFLICT"
+            message: "Job already saved"
+
+    InternalError:
+      description: Erreur serveur interne
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            code: "INTERNAL_ERROR"
+            message: "An unexpected error occurred"

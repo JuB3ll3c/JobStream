@@ -1,0 +1,16 @@
+spring:
+  application:
+    name: api
+#  datasource:
+#    url: ${SPRING_DATASOURCE_URL}
+#    username: ${SPRING_DATASOURCE_USERNAME}
+#    password: ${SPRING_DATASOURCE_PASSWORD}
+#    driver-class-name: org.postgresql.Driver
+
+# Adzuna API configuration
+adzuna:
+  api:
+    base-url: https://api.adzuna.com/v1/api
+    app-id: test
+    app-key: test
+    default-country: ch
