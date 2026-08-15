@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import java.net.URI;
 
-import static com.jobstream.api.Utils.PageUtils.toPagedResponse;
+import static com.jobstream.api.utils.PageUtils.toPagedResponse;
 
 @RestController
 @RequiredArgsConstructor
