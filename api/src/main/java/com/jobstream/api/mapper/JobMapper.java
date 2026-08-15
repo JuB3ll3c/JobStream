@@ -10,6 +10,5 @@ import org.mapstruct.MappingConstants;
 @Mapper(componentModel = MappingConstants.ComponentModel.SPRING, injectionStrategy = InjectionStrategy.CONSTRUCTOR)
 public interface JobMapper {
     JobDto toDto(Job job);
-    Job toEntity(JobDto jobDto);
     Job toEntity(JobRequestDto jobRequestDto);
 }

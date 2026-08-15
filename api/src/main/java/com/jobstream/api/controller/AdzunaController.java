@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.*;
 
 /**
  * REST Controller pour la recherche d'offres d'emploi
- * Endpoint: GET /api/jobs?q={motCle}
+ * Endpoint: GET /adzuna/jobs?q={motCle}
  */
 @RestController
 @RequiredArgsConstructor

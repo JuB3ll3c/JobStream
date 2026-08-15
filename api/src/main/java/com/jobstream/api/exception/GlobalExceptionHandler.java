@@ -4,6 +4,7 @@ import com.jobstream.dto.ErrorResponse;
 import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -76,6 +77,24 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleNotFound(ResourceNotFoundException ex) {
         return build(HttpStatus.NOT_FOUND, "Offre non trouvée", ex.getMessage());
+    }
+
+    /**
+     * Gère les conflits (ex: job déjà sauvegardé)
+     */
+    @ExceptionHandler(ResourceConflictException.class)
+    public ResponseEntity<ErrorResponse> handleConflict(ResourceConflictException ex) {
+        log.warn("Conflit: {}", ex.getMessage());
+        return build(HttpStatus.CONFLICT, "Conflit de ressources", ex.getMessage());
+    }
+
+    /**
+     * Gère les violations de contraintes en base (ex: contrainte unique sur external_id)
+     */
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ErrorResponse> handleDataIntegrityViolation(DataIntegrityViolationException ex) {
+        log.warn("Violation de contrainte en base: {}", ex.getMessage());
+        return build(HttpStatus.CONFLICT, "Conflit de ressources", "Une ressource identique existe déjà");
     }
 
     /**
