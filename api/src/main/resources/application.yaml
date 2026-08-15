@@ -1,16 +1,20 @@
 spring:
   application:
     name: api
-#  datasource:
-#    url: ${SPRING_DATASOURCE_URL}
-#    username: ${SPRING_DATASOURCE_USERNAME}
-#    password: ${SPRING_DATASOURCE_PASSWORD}
-#    driver-class-name: org.postgresql.Driver
+  datasource:
+    url: jdbc:postgresql://localhost:5433/test
+    username: test
+    password: test
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: update
 
 # Adzuna API configuration
 adzuna:
   api:
     base-url: https://api.adzuna.com/v1/api
-    app-id: ${ADZUNA_APP_ID}
-    app-key: ${ADZUNA_APP_KEY}
+    app-id: ${ADZUNA_APP_ID:}
+    app-key: ${ADZUNA_APP_KEY:}
     default-country: ${ADZUNA_DEFAULT_COUNTRY:ch}

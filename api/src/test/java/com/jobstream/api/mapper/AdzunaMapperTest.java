@@ -1,7 +1,7 @@
 package com.jobstream.api.mapper;
 
+import com.jobstream.dto.AdzunaJobSearchResponse;
 import com.jobstream.dto.JobDto;
-import com.jobstream.dto.JobSearchResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -187,7 +187,7 @@ class AdzunaMapperTest {
 
     @Test
     void toJobSearchResponse_shouldReturnEmptyForNullResponse() {
-        JobSearchResponse result = mapper.toJobSearchResponse(null);
+        AdzunaJobSearchResponse result = mapper.toJobSearchResponse(null);
 
         assertThat(result.getJobs()).isEmpty();
         assertThat(result.getTotal()).isZero();
@@ -198,7 +198,7 @@ class AdzunaMapperTest {
     void toJobSearchResponse_shouldReturnEmptyForNullResults() {
         Map<String, Object> response = Map.of("count", 0);
 
-        JobSearchResponse result = mapper.toJobSearchResponse(response);
+        AdzunaJobSearchResponse result = mapper.toJobSearchResponse(response);
 
         assertThat(result.getJobs()).isEmpty();
         assertThat(result.getTotal()).isZero();
@@ -209,7 +209,7 @@ class AdzunaMapperTest {
     void toJobSearchResponse_shouldReturnEmptyForEmptyResults() {
         Map<String, Object> response = Map.of("results", List.of(), "count", 0);
 
-        JobSearchResponse result = mapper.toJobSearchResponse(response);
+        AdzunaJobSearchResponse result = mapper.toJobSearchResponse(response);
 
         assertThat(result.getJobs()).isEmpty();
         assertThat(result.getTotal()).isZero();
@@ -226,7 +226,7 @@ class AdzunaMapperTest {
         );
         Map<String, Object> response = Map.of("results", List.of(jobData), "count", 150);
 
-        JobSearchResponse result = mapper.toJobSearchResponse(response);
+        AdzunaJobSearchResponse result = mapper.toJobSearchResponse(response);
 
         assertThat(result.getJobs()).hasSize(1);
         assertThat(result.getJobs().get(0).getExternalId()).isEqualTo("job_7");
@@ -244,7 +244,7 @@ class AdzunaMapperTest {
         );
         Map<String, Object> response = Map.of("results", List.of(jobData, jobData));
 
-        JobSearchResponse result = mapper.toJobSearchResponse(response);
+        AdzunaJobSearchResponse result = mapper.toJobSearchResponse(response);
 
         assertThat(result.getTotal()).isEqualTo(2);
         assertThat(result.getCount()).isEqualTo(2);

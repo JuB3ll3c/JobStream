@@ -1,4 +1,4 @@
-openapi: 3.0.3
+openapi: 3.1.0
 info:
   title: JobStream API
   version: 1.0.0
@@ -19,12 +19,12 @@ paths:
   # --------------------------------------------------------------------------
   # Jobs - Recherche externe (Adzuna)
   # --------------------------------------------------------------------------
-  /api/jobs:
+  /adzuna/jobs:
     get:
       summary: Rechercher des offres d'emploi
       operationId: searchJobs
       tags:
-        - Jobs
+        - Adzuna
       parameters:
         - name: query
           in: query
@@ -69,18 +69,18 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/JobSearchResponse'
+                $ref: '#/components/schemas/AdzunaJobSearchResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
         '500':
           $ref: '#/components/responses/InternalError'
 
-  /api/jobs/{externalId}:
+  /adzuna/jobs/{externalId}:
     get:
       summary: Détail d'un job externe
-      operationId: getJobById
+      operationId: getAdzunaJobById
       tags:
-        - Jobs
+        - Adzuna
       parameters:
         - name: externalId
           in: path
@@ -98,17 +98,100 @@ paths:
                 $ref: '#/components/schemas/JobDto'
         '404':
           $ref: '#/components/responses/NotFound'
+  /jobs/{id}:
+    get:
+      summary: Détail d'un job sauvegardé
+      operationId: getJobById
+      tags:
+        - Job
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID interne du job sauvegardé
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Détails du job sauvegardé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobDto'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      summary: Supprimer un job sauvegardé
+      operationId: deleteJob
+      tags:
+        - Job
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID du job à supprimer
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '204':
+          description: Job supprimé
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /jobs:
+    get:
+      summary: Liste des jobs sauvegardés
+      operationId: getJobs
+      tags:
+        - Job
+      parameters:
+        - name: pageable
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/Pageable'
+      responses:
+        '200':
+          description: Liste paginée des jobs sauvegardés
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagedJobResponse'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+    post:
+      summary: Sauvegarder un job
+      operationId: saveJob
+      tags:
+        - Job
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JobRequestDto'
+      responses:
+        '201':
+          description: Job sauvegardé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobDto'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
 # ============================================================================
 # COMPONENTS - Schemas & Responses
 # ============================================================================
 components:
   schemas:
-    # ----------------------------------------------------------------------
-    # Job DTOs (externes - Adzuna)
-    # ----------------------------------------------------------------------
-    JobDto:
+    JobRequestDto:
       type: object
-      description: Job trouvé via l'API externe (non sauvegardé)
+      description: Job trouvé via l'API externe (à sauvegarder)
       required:
         - externalId
         - title
@@ -159,11 +242,58 @@ components:
             type: string
           description: Liste des exigences
           example: ["Java 17", "Spring Boot", "PostgreSQL"]
+    JobDto:
+      description: Job sauvegardé
+      allOf:
+        - $ref: '#/components/schemas/JobRequestDto'
+        - type: object
+          properties:
+            id:
+              type: integer
+              format: int64
+            savedAt:
+              type: string
+              format: date-time
+              description: Date de sauvegarde
+            updatedAt:
+              type: string
+              format: date-time
+              description: Dernière mise à jour
+    PagedJobResponse:
+      type: object
+      description: Réponse paginée pour les jobs sauvegardés
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/JobDto'
+        page:
+          type: integer
+        size:
+          type: integer
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+    Pageable:
+      type: object
+      properties:
+        page:
+          type: integer
+          minimum: 0
+        size:
+          type: integer
+          minimum: 1
+        sort:
+          type: array
+          items:
+            type: string
 
     # ----------------------------------------------------------------------
     # Response DTOs
     # ----------------------------------------------------------------------
-    JobSearchResponse:
+    AdzunaJobSearchResponse:
       type: object
       properties:
         jobs:

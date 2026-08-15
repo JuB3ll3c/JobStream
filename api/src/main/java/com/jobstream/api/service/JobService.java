@@ -1,33 +1,42 @@
 package com.jobstream.api.service;
 
-import com.jobstream.api.client.AdzunaClient;
-import com.jobstream.api.exception.ResourceNotFoundException;
-import com.jobstream.api.mapper.AdzunaMapper;
+import com.jobstream.api.mapper.JobMapper;
+import com.jobstream.api.repository.JobRepository;
 import com.jobstream.dto.JobDto;
-import com.jobstream.dto.JobSearchResponse;
-import lombok.AllArgsConstructor;
+import com.jobstream.dto.JobRequestDto;
+import jakarta.persistence.EntityNotFoundException;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-
+import org.springframework.transaction.annotation.Transactional;
+import java.util.List;
 
 @Service
-@AllArgsConstructor
+@RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class JobService {
-    private final AdzunaClient adzunaClient;
-    private final AdzunaMapper adzunaMapper;
+    private final JobRepository jobRepository;
+    private final JobMapper jobMapper;
 
-    public JobSearchResponse searchJobs(String query, Integer page, Integer limit, String location) {
-        return adzunaMapper.toJobSearchResponse(
-                adzunaClient.callAdzunaApi(query, page, limit, location)
-        );
+    public JobDto getJobById(Long id){
+        return jobRepository.findById(id)
+                .map(jobMapper::toDto)
+                .orElseThrow(() -> new EntityNotFoundException("Job non trouvé avec l'id : " + id));
     }
 
-    public JobDto getJobById(String externalId) {
-        return adzunaMapper.toJobSearchResponse(
-                        adzunaClient.callAdzunaApi(externalId, null, null, null)
-                ).getJobs().stream()
-                .filter(job -> externalId.equals(job.getExternalId()))
-                .findFirst()
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "Offre introuvable avec l'id: " + externalId));
+    public Page<JobDto> getJobs(Pageable pageable) {
+        return jobRepository.findAll(pageable)
+                .map(jobMapper::toDto);
+    }
+
+    @Transactional
+    public JobDto saveJob(JobRequestDto jobDto){
+        return jobMapper.toDto(jobRepository.save(jobMapper.toEntity(jobDto)));
+    }
+
+    @Transactional
+    public void deleteJob(Long id){
+        jobRepository.deleteById(id);
     }
 }

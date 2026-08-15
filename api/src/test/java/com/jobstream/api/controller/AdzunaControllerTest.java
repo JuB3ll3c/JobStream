@@ -2,13 +2,12 @@ package com.jobstream.api.controller;
 
 import com.jobstream.api.exception.ExternalApiException;
 import com.jobstream.api.exception.ResourceNotFoundException;
-import com.jobstream.api.service.JobService;
+import com.jobstream.api.service.AdzunaService;
+import com.jobstream.dto.AdzunaJobSearchResponse;
 import com.jobstream.dto.JobDto;
-import com.jobstream.dto.JobSearchResponse;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
-import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -20,14 +19,14 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(JobController.class)
-class JobControllerTest {
+@WebMvcTest(AdzunaController.class)
+class AdzunaControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
 
     @MockitoBean
-    private JobService jobService;
+    private AdzunaService adzunaService;
 
     @Test
     void searchJobs_shouldReturn200WithJobs() throws Exception {
@@ -39,12 +38,12 @@ class JobControllerTest {
         job.setPostedDate(LocalDate.of(2026, 3, 25));
         job.setJobUrl("https://example.com/job/1");
 
-        JobSearchResponse response = new JobSearchResponse();
+        AdzunaJobSearchResponse response = new AdzunaJobSearchResponse();
         response.setJobs(List.of(job));
         response.setTotal(150);
         response.setCount(1);
 
-        when(jobService.searchJobs("java", 1, 20, null)).thenReturn(response);
+        when(adzunaService.searchJobs("java", 1, 20, null)).thenReturn(response);
 
         mockMvc.perform(get("/api/jobs").param("query", "java"))
                 .andExpect(status().isOk())
@@ -99,7 +98,7 @@ class JobControllerTest {
 
     @Test
     void searchJobs_shouldReturn502WhenExternalApiFails() throws Exception {
-        when(jobService.searchJobs("java", 1, 20, null))
+        when(adzunaService.searchJobs("java", 1, 20, null))
                 .thenThrow(new ExternalApiException("Adzuna", "Erreur lors de la recherche d'offres", 502));
 
         mockMvc.perform(get("/api/jobs").param("query", "java"))
@@ -111,7 +110,7 @@ class JobControllerTest {
 
     @Test
     void searchJobs_shouldReturn500OnUnexpectedError() throws Exception {
-        when(jobService.searchJobs("java", 1, 20, null))
+        when(adzunaService.searchJobs("java", 1, 20, null))
                 .thenThrow(new IllegalStateException("boom"));
 
         mockMvc.perform(get("/api/jobs").param("query", "java"))
@@ -127,7 +126,7 @@ class JobControllerTest {
         job.setSalaryMin(50000);
         job.setSalaryMax(80000);
 
-        when(jobService.getJobById("job_1")).thenReturn(job);
+        when(adzunaService.getJobById("job_1")).thenReturn(job);
 
         mockMvc.perform(get("/api/jobs/job_1"))
                 .andExpect(status().isOk())
@@ -139,7 +138,7 @@ class JobControllerTest {
 
     @Test
     void getJobById_shouldReturn404WhenNotFound() throws Exception {
-        when(jobService.getJobById("job_unknown"))
+        when(adzunaService.getJobById("job_unknown"))
                 .thenThrow(new ResourceNotFoundException("Offre introuvable avec l'id: job_unknown"));
 
         mockMvc.perform(get("/api/jobs/job_unknown"))

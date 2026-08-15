@@ -1,7 +1,7 @@
 package com.jobstream.api.mapper;
 
+import com.jobstream.dto.AdzunaJobSearchResponse;
 import com.jobstream.dto.JobDto;
-import com.jobstream.dto.JobSearchResponse;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Component;
 
@@ -94,7 +94,7 @@ public class AdzunaMapper {
     }
 
     @SuppressWarnings("unchecked")
-    public JobSearchResponse toJobSearchResponse(Map<String, Object> response){
+    public AdzunaJobSearchResponse toJobSearchResponse(Map<String, Object> response){
         if (response == null) {
             return createEmptyResponse();
         }
@@ -113,7 +113,7 @@ public class AdzunaMapper {
         // Adzuna ne retourne pas toujours un total, on utilise count ou jobs.size()
         Integer count = extractNumber(response, "count");
 
-        JobSearchResponse result = new JobSearchResponse();
+        AdzunaJobSearchResponse result = new AdzunaJobSearchResponse();
         result.setJobs(jobs);
         result.setTotal(count != null ? count : jobs.size());
         result.setCount(jobs.size());
@@ -121,8 +121,8 @@ public class AdzunaMapper {
         return result;
     }
 
-    private JobSearchResponse createEmptyResponse() {
-        JobSearchResponse result = new JobSearchResponse();
+    private AdzunaJobSearchResponse createEmptyResponse() {
+        AdzunaJobSearchResponse result = new AdzunaJobSearchResponse();
         result.setJobs(new ArrayList<>());
         result.setTotal(0);
         result.setCount(0);
