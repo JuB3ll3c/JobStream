@@ -8,6 +8,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
@@ -69,6 +70,20 @@ public class GlobalExceptionHandler {
         log.error("Erreur de parsing JSON: {}", ex.getMessage(), ex);
 
         return build(HttpStatus.BAD_REQUEST, "Format de requête invalide", "Le corps de la requête n'est pas un JSON valide");
+    }
+
+    /**
+     * Gère les erreurs de validation du corps de requête (@Valid sur @RequestBody)
+     */
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ErrorResponse> handleMethodArgumentNotValid(MethodArgumentNotValidException ex) {
+        log.warn("Erreur de validation du corps de requête: {}", ex.getMessage());
+
+        List<String> violations = ex.getBindingResult().getFieldErrors().stream()
+                .map(fe -> fe.getField() + ": " + fe.getDefaultMessage())
+                .toList();
+
+        return build(HttpStatus.BAD_REQUEST, "Requête invalide", String.join(", ", violations));
     }
 
     /**

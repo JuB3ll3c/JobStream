@@ -1,21 +1,28 @@
 package com.jobstream.api.service;
 
-import com.jobstream.api.client.AdzunaClient;
+import com.jobstream.api.entity.Job;
+import com.jobstream.api.exception.ResourceConflictException;
 import com.jobstream.api.exception.ResourceNotFoundException;
-import com.jobstream.api.mapper.AdzunaMapper;
+import com.jobstream.api.mapper.JobMapper;
+import com.jobstream.api.repository.JobRepository;
 import com.jobstream.dto.JobDto;
-import com.jobstream.dto.AdzunaJobSearchResponse;
+import com.jobstream.dto.JobRequestDto;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 
 import java.util.List;
-import java.util.Map;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -23,73 +30,100 @@ import static org.mockito.Mockito.when;
 class JobServiceTest {
 
     @Mock
-    private AdzunaClient adzunaClient;
+    private JobRepository jobRepository;
 
     @Mock
-    private AdzunaMapper adzunaMapper;
+    private JobMapper jobMapper;
 
     @InjectMocks
-    private AdzunaService adzunaService;
+    private JobService jobService;
 
     @Test
-    void searchJobs_shouldDelegateToClientAndMapResult() {
-        Map<String, Object> rawResponse = Map.of("count", 1);
-        AdzunaJobSearchResponse mapped = new AdzunaJobSearchResponse();
-        mapped.setJobs(List.of(new JobDto("job_1", "Titre", "Société", "Lyon")));
-        mapped.setTotal(1);
-        mapped.setCount(1);
+    void getJobById_shouldReturnDtoWhenFound() {
+        Job job = new Job();
+        JobDto dto = new JobDto("job_1", "Développeur Java", "TechCorp", "Paris");
+        when(jobRepository.findById(1L)).thenReturn(Optional.of(job));
+        when(jobMapper.toDto(job)).thenReturn(dto);
 
-        when(adzunaClient.callAdzunaApi("java", 1, 20, "paris")).thenReturn(rawResponse);
-        when(adzunaMapper.toJobSearchResponse(rawResponse)).thenReturn(mapped);
+        JobDto result = jobService.getJobById(1L);
 
-        AdzunaJobSearchResponse result = adzunaService.searchJobs("java", 1, 20, "paris");
-
-        assertThat(result).isSameAs(mapped);
-        verify(adzunaClient).callAdzunaApi("java", 1, 20, "paris");
-        verify(adzunaMapper).toJobSearchResponse(rawResponse);
+        assertThat(result).isSameAs(dto);
+        verify(jobRepository).findById(1L);
+        verify(jobMapper).toDto(job);
     }
 
     @Test
-    void searchJobs_shouldPassNullOptionalParameters() {
-        Map<String, Object> rawResponse = Map.of();
-        AdzunaJobSearchResponse mapped = new AdzunaJobSearchResponse();
+    void getJobById_shouldThrowNotFoundWhenMissing() {
+        when(jobRepository.findById(1L)).thenReturn(Optional.empty());
 
-        when(adzunaClient.callAdzunaApi("java", null, null, null)).thenReturn(rawResponse);
-        when(adzunaMapper.toJobSearchResponse(rawResponse)).thenReturn(mapped);
-
-        adzunaService.searchJobs("java", null, null, null);
-
-        verify(adzunaClient).callAdzunaApi("java", null, null, null);
-    }
-
-    @Test
-    void getJobById_shouldReturnJobWhenIdMatches() {
-        Map<String, Object> rawResponse = Map.of("count", 1);
-        JobDto job = new JobDto("job_1", "Développeur Java", "TechCorp", "Paris");
-        AdzunaJobSearchResponse mapped = new AdzunaJobSearchResponse();
-        mapped.setJobs(List.of(job));
-
-        when(adzunaClient.callAdzunaApi("job_1", null, null, null)).thenReturn(rawResponse);
-        when(adzunaMapper.toJobSearchResponse(rawResponse)).thenReturn(mapped);
-
-        JobDto result = adzunaService.getJobById("job_1");
-
-        assertThat(result).isSameAs(job);
-        verify(adzunaClient).callAdzunaApi("job_1", null, null, null);
-        verify(adzunaMapper).toJobSearchResponse(rawResponse);
-    }
-
-    @Test
-    void getJobById_shouldThrowNotFoundWhenNoIdMatches() {
-        Map<String, Object> rawResponse = Map.of("results", List.of());
-        AdzunaJobSearchResponse mapped = new AdzunaJobSearchResponse();
-        mapped.setJobs(List.of(new JobDto("job_999", "Autre offre", "Boite", "Lyon")));
-
-        when(adzunaClient.callAdzunaApi("job_1", null, null, null)).thenReturn(rawResponse);
-        when(adzunaMapper.toJobSearchResponse(rawResponse)).thenReturn(mapped);
-
-        assertThatThrownBy(() -> adzunaService.getJobById("job_1"))
+        assertThatThrownBy(() -> jobService.getJobById(1L))
                 .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("1");
+    }
+
+    @Test
+    void getJobs_shouldMapPage() {
+        Job job = new Job();
+        JobDto dto = new JobDto("job_1", "Développeur Java", "TechCorp", "Paris");
+        Page<Job> page = new PageImpl<>(List.of(job));
+        PageRequest pageable = PageRequest.of(0, 10);
+
+        when(jobRepository.findAll(pageable)).thenReturn(page);
+        when(jobMapper.toDto(job)).thenReturn(dto);
+
+        Page<JobDto> result = jobService.getJobs(pageable);
+
+        assertThat(result.getContent()).containsExactly(dto);
+        verify(jobRepository).findAll(pageable);
+    }
+
+    @Test
+    void saveJob_shouldSaveAndReturnDto() {
+        JobRequestDto request = new JobRequestDto("job_1", "Développeur Java", "TechCorp", "Paris");
+        Job entity = new Job();
+        Job saved = new Job();
+        JobDto dto = new JobDto("job_1", "Développeur Java", "TechCorp", "Paris");
+
+        when(jobRepository.existsByExternalId("job_1")).thenReturn(false);
+        when(jobMapper.toEntity(request)).thenReturn(entity);
+        when(jobRepository.save(entity)).thenReturn(saved);
+        when(jobMapper.toDto(saved)).thenReturn(dto);
+
+        JobDto result = jobService.saveJob(request);
+
+        assertThat(result).isSameAs(dto);
+        verify(jobRepository).save(entity);
+    }
+
+    @Test
+    void saveJob_shouldThrowConflictWhenExternalIdAlreadyExists() {
+        JobRequestDto request = new JobRequestDto("job_1", "Développeur Java", "TechCorp", "Paris");
+        when(jobRepository.existsByExternalId("job_1")).thenReturn(true);
+
+        assertThatThrownBy(() -> jobService.saveJob(request))
+                .isInstanceOf(ResourceConflictException.class)
                 .hasMessageContaining("job_1");
+
+        verify(jobRepository, never()).save(any());
+    }
+
+    @Test
+    void deleteJob_shouldDeleteWhenExists() {
+        when(jobRepository.existsById(1L)).thenReturn(true);
+
+        jobService.deleteJob(1L);
+
+        verify(jobRepository).deleteById(1L);
+    }
+
+    @Test
+    void deleteJob_shouldThrowNotFoundWhenMissing() {
+        when(jobRepository.existsById(1L)).thenReturn(false);
+
+        assertThatThrownBy(() -> jobService.deleteJob(1L))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("1");
+
+        verify(jobRepository, never()).deleteById(any());
     }
 }
