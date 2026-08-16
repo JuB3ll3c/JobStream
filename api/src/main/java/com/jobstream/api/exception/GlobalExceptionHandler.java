@@ -17,8 +17,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 /**
- * Gestionnaire global des exceptions pour l'API REST.
- * Centralise la gestion des erreurs et fournit des réponses standardisées.
+ * Global exception handler for the REST API.
+ * Centralizes error handling and provides standardized responses.
  */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -26,100 +26,100 @@ public class GlobalExceptionHandler {
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     /**
-     * Gère les erreurs des APIs externes (Adzuna, etc.)
+     * Handles errors from external APIs (Adzuna, etc.)
      */
     @ExceptionHandler(ExternalApiException.class)
     public ResponseEntity<ErrorResponse> handleExternalApiException(ExternalApiException ex) {
-        log.error("Erreur API externe [{}]: {}", ex.getApiName(), ex.getMessage(), ex);
+        log.error("External API error [{}]: {}", ex.getApiName(), ex.getMessage(), ex);
 
-        return build(HttpStatus.BAD_GATEWAY, "Erreur lors de la communication avec le service externe", ex.getMessage());
+        return build(HttpStatus.BAD_GATEWAY, "Error communicating with the external service", ex.getMessage());
     }
 
     /**
-     * Gère les erreurs de validation des paramètres (@NotBlank, @Size, @Min, @Max)
+     * Handles parameter validation errors (@NotBlank, @Size, @Min, @Max)
      */
     @ExceptionHandler(ConstraintViolationException.class)
     public ResponseEntity<ErrorResponse> handleConstraintViolation(ConstraintViolationException ex) {
-        log.warn("Erreur de validation: {}", ex.getMessage());
+        log.warn("Validation error: {}", ex.getMessage());
 
         List<String> violations = ex.getConstraintViolations().stream()
                 .map(v -> v.getPropertyPath() + ": " + v.getMessage())
                 .toList();
 
-        return build(HttpStatus.BAD_REQUEST, "Paramètres de requête invalides", String.join(", ", violations));
+        return build(HttpStatus.BAD_REQUEST, "Invalid query parameters", String.join(", ", violations));
     }
 
     /**
-     * Gère les erreurs de type de paramètre (ex: page=abc au lieu de page=1)
+     * Handles parameter type errors (e.g. page=abc instead of page=1)
      */
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<ErrorResponse> handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
-        log.warn("Erreur de type de paramètre: {}", ex.getMessage());
+        log.warn("Parameter type error: {}", ex.getMessage());
 
-        String message = String.format("Le paramètre '%s' a une valeur invalide: %s",
+        String message = String.format("Parameter '%s' has an invalid value: %s",
                 ex.getName(), ex.getValue());
 
-        return build(HttpStatus.BAD_REQUEST, "Type de paramètre invalide", message);
+        return build(HttpStatus.BAD_REQUEST, "Invalid parameter type", message);
     }
 
     /**
-     * Gère les erreurs de parsing JSON (corps de requête invalide)
+     * Handles JSON parsing errors (invalid request body)
      */
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ErrorResponse> handleMessageNotReadable(HttpMessageNotReadableException ex) {
-        log.error("Erreur de parsing JSON: {}", ex.getMessage(), ex);
+        log.error("JSON parsing error: {}", ex.getMessage(), ex);
 
-        return build(HttpStatus.BAD_REQUEST, "Format de requête invalide", "Le corps de la requête n'est pas un JSON valide");
+        return build(HttpStatus.BAD_REQUEST, "Invalid request format", "The request body is not valid JSON");
     }
 
     /**
-     * Gère les erreurs de validation du corps de requête (@Valid sur @RequestBody)
+     * Handles request body validation errors (@Valid on @RequestBody)
      */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleMethodArgumentNotValid(MethodArgumentNotValidException ex) {
-        log.warn("Erreur de validation du corps de requête: {}", ex.getMessage());
+        log.warn("Request body validation error: {}", ex.getMessage());
 
         List<String> violations = ex.getBindingResult().getFieldErrors().stream()
                 .map(fe -> fe.getField() + ": " + fe.getDefaultMessage())
                 .toList();
 
-        return build(HttpStatus.BAD_REQUEST, "Requête invalide", String.join(", ", violations));
+        return build(HttpStatus.BAD_REQUEST, "Invalid request", String.join(", ", violations));
     }
 
     /**
-     * Gère les erreurs 404 NOT FOUND
+     * Handles 404 NOT FOUND errors
      */
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleNotFound(ResourceNotFoundException ex) {
-        return build(HttpStatus.NOT_FOUND, "Offre non trouvée", ex.getMessage());
+        return build(HttpStatus.NOT_FOUND, "Job not found", ex.getMessage());
     }
 
     /**
-     * Gère les conflits (ex: job déjà sauvegardé)
+     * Handles conflicts (e.g. job already saved)
      */
     @ExceptionHandler(ResourceConflictException.class)
     public ResponseEntity<ErrorResponse> handleConflict(ResourceConflictException ex) {
-        log.warn("Conflit: {}", ex.getMessage());
-        return build(HttpStatus.CONFLICT, "Conflit de ressources", ex.getMessage());
+        log.warn("Conflict: {}", ex.getMessage());
+        return build(HttpStatus.CONFLICT, "Resource conflict", ex.getMessage());
     }
 
     /**
-     * Gère les violations de contraintes en base (ex: contrainte unique sur external_id)
+     * Handles database constraint violations (e.g. unique constraint on external_id)
      */
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ErrorResponse> handleDataIntegrityViolation(DataIntegrityViolationException ex) {
-        log.warn("Violation de contrainte en base: {}", ex.getMessage());
-        return build(HttpStatus.CONFLICT, "Conflit de ressources", "Une ressource identique existe déjà");
+        log.warn("Database constraint violation: {}", ex.getMessage());
+        return build(HttpStatus.CONFLICT, "Resource conflict", "A similar resource already exists");
     }
 
     /**
-     * Gère toutes les autres exceptions non prévues
+     * Handles all other unexpected exceptions
      */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGenericException(Exception ex) {
-        log.error("Erreur inattendue: {}", ex.getMessage(), ex);
+        log.error("Unexpected error: {}", ex.getMessage(), ex);
 
-        return build(HttpStatus.INTERNAL_SERVER_ERROR, "Erreur interne du serveur", "Une erreur inattendue s'est produite");
+        return build(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error", "An unexpected error occurred");
     }
 
     private ResponseEntity<ErrorResponse> build(HttpStatus status, String error, String message) {

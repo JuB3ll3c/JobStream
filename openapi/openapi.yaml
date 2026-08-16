@@ -3,11 +3,11 @@ info:
   title: JobStream API
   version: 1.0.0
   description: |
-    API REST pour la recherche et gestion d'offres d'emploi.
-    Contrats partagés entre Backend (Spring Boot) et Frontend (Angular).
+    REST API for searching and managing job offers.
+    Shared contracts between Backend (Spring Boot) and Frontend (Angular).
     
-    **Approche API-First**: Ce fichier est la source de vérité.
-    Les DTOs et clients sont générés automatiquement à partir de cette spec.
+    **API-First approach**: This file is the source of truth.
+    DTOs and clients are generated automatically from this spec.
 servers:
   - url: http://localhost:8080
     description: Development server
@@ -17,11 +17,11 @@ servers:
 # ============================================================================
 paths:
   # --------------------------------------------------------------------------
-  # Jobs - Recherche externe (Adzuna)
+  # Jobs - External search (Adzuna)
   # --------------------------------------------------------------------------
   /adzuna/jobs:
     get:
-      summary: Rechercher des offres d'emploi
+      summary: Search for job offers
       operationId: searchJobs
       tags:
         - Adzuna
@@ -29,17 +29,17 @@ paths:
         - name: query
           in: query
           required: true
-          description: Mot-clé de recherche
+          description: Search keyword
           schema:
             type: string
             minLength: 1
             maxLength: 200
             pattern: "^.*\\S.*$"
-          example: "développeur java paris"
+          example: "java developer paris"
         - name: page
           in: query
           required: false
-          description: Numéro de page
+          description: Page number
           schema:
             type: integer
             default: 1
@@ -48,7 +48,7 @@ paths:
         - name: limit
           in: query
           required: false
-          description: Nombre de résultats par page
+          description: Number of results per page
           schema:
             type: integer
             default: 20
@@ -58,14 +58,14 @@ paths:
         - name: location
           in: query
           required: false
-          description: Localisation de recherche
+          description: Search location
           schema:
             type: string
             pattern: "^[a-zA-Z\\s\\-.,]+$"
             example: "paris"
       responses:
         '200':
-          description: Liste des jobs trouvés
+          description: List of found jobs
           content:
             application/json:
               schema:
@@ -77,7 +77,7 @@ paths:
 
   /adzuna/jobs/{externalId}:
     get:
-      summary: Détail d'un job externe
+      summary: Get an external job detail
       operationId: getAdzunaJobById
       tags:
         - Adzuna
@@ -85,13 +85,13 @@ paths:
         - name: externalId
           in: path
           required: true
-          description: ID externe du job (Adzuna)
+          description: External job ID (Adzuna)
           schema:
             type: string
           example: "job_123456"
       responses:
         '200':
-          description: Détails du job
+          description: Job details
           content:
             application/json:
               schema:
@@ -100,7 +100,7 @@ paths:
           $ref: '#/components/responses/NotFound'
   /jobs/{id}:
     get:
-      summary: Détail d'un job sauvegardé
+      summary: Get a saved job detail
       operationId: getJobById
       tags:
         - Job
@@ -108,13 +108,13 @@ paths:
         - name: id
           in: path
           required: true
-          description: ID interne du job sauvegardé
+          description: Internal ID of the saved job
           schema:
             type: integer
             format: int64
       responses:
         '200':
-          description: Détails du job sauvegardé
+          description: Saved job details
           content:
             application/json:
               schema:
@@ -123,7 +123,7 @@ paths:
           $ref: '#/components/responses/NotFound'
 
     delete:
-      summary: Supprimer un job sauvegardé
+      summary: Delete a saved job
       operationId: deleteJob
       tags:
         - Job
@@ -131,18 +131,18 @@ paths:
         - name: id
           in: path
           required: true
-          description: ID du job à supprimer
+          description: ID of the job to delete
           schema:
             type: integer
             format: int64
       responses:
         '204':
-          description: Job supprimé
+          description: Job deleted
         '404':
           $ref: '#/components/responses/NotFound'
   /jobs:
     get:
-      summary: Liste des jobs sauvegardés
+      summary: List saved jobs
       operationId: getJobs
       tags:
         - Job
@@ -154,7 +154,7 @@ paths:
             $ref: '#/components/schemas/Pageable'
       responses:
         '200':
-          description: Liste paginée des jobs sauvegardés
+          description: Paginated list of saved jobs
           content:
             application/json:
               schema:
@@ -163,7 +163,7 @@ paths:
           $ref: '#/components/responses/InternalError'
 
     post:
-      summary: Sauvegarder un job
+      summary: Save a job
       operationId: saveJob
       tags:
         - Job
@@ -175,7 +175,7 @@ paths:
               $ref: '#/components/schemas/JobRequestDto'
       responses:
         '201':
-          description: Job sauvegardé
+          description: Job saved
           content:
             application/json:
               schema:
@@ -191,7 +191,7 @@ components:
   schemas:
     JobRequestDto:
       type: object
-      description: Job trouvé via l'API externe (à sauvegarder)
+      description: Job found via the external API (to be saved)
       required:
         - externalId
         - title
@@ -200,11 +200,11 @@ components:
       properties:
         externalId:
           type: string
-          description: ID externe (Adzuna)
+          description: External ID (Adzuna)
           example: "job_123456"
         title:
           type: string
-          example: "Développeur Java Senior"
+          example: "Senior Java Developer"
         company:
           type: string
           example: "TechCorp France"
@@ -213,37 +213,37 @@ components:
           example: "Paris, France"
         description:
           type: string
-          description: Description complète de l'offre
-          example: "Nous cherchons un développeur Java expérimenté..."
+          description: Full job description
+          example: "We are looking for an experienced Java developer..."
         salaryMin:
           type: integer
-          description: Salaire minimum
+          description: Minimum salary
           example: 50000
         salaryMax:
           type: integer
-          description: Salaire maximum
+          description: Maximum salary
           example: 80000
         contractType:
           type: string
-          description: Type de contrat
+          description: Contract type
           example: "CDI"
         postedDate:
           type: string
           format: date
-          description: Date de publication
+          description: Publication date
           example: "2026-03-20"
         jobUrl:
           type: string
-          description: URL originale de l'offre
+          description: Original job URL
           example: "https://example.com/job/123"
         requirements:
           type: array
           items:
             type: string
-          description: Liste des exigences
+          description: List of requirements
           example: ["Java 17", "Spring Boot", "PostgreSQL"]
     JobDto:
-      description: Job sauvegardé
+      description: Saved job
       allOf:
         - $ref: '#/components/schemas/JobRequestDto'
         - type: object
@@ -254,14 +254,14 @@ components:
             createdAt:
               type: string
               format: date-time
-              description: Date de création
+              description: Creation date
             updatedAt:
               type: string
               format: date-time
-              description: Dernière mise à jour
+              description: Last update
     PagedJobResponse:
       type: object
-      description: Réponse paginée pour les jobs sauvegardés
+      description: Paginated response for saved jobs
       properties:
         content:
           type: array
@@ -302,11 +302,11 @@ components:
             $ref: '#/components/schemas/JobDto'
         total:
           type: integer
-          description: Nombre total de résultats
+          description: Total number of results
           example: 150
         count:
           type: integer
-          description: Nombre de résultats retournés
+          description: Number of returned results
           example: 15
 
     # ----------------------------------------------------------------------
@@ -332,7 +332,7 @@ components:
   # ----------------------------------------------------------------------
   responses:
     BadRequest:
-      description: Requête invalide
+      description: Invalid request
       content:
         application/json:
           schema:
@@ -342,7 +342,7 @@ components:
             message: "Invalid parameters"
 
     NotFound:
-      description: Ressource non trouvée
+      description: Resource not found
       content:
         application/json:
           schema:
@@ -352,7 +352,7 @@ components:
             message: "Job not found"
 
     Conflict:
-      description: Ressource déjà existante
+      description: Resource already exists
       content:
         application/json:
           schema:
@@ -362,7 +362,7 @@ components:
             message: "Job already saved"
 
     InternalError:
-      description: Erreur serveur interne
+      description: Internal server error
       content:
         application/json:
           schema:

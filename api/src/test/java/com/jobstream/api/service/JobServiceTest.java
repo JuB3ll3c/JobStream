@@ -41,7 +41,7 @@ class JobServiceTest {
     @Test
     void getJobById_shouldReturnDtoWhenFound() {
         Job job = new Job();
-        JobDto dto = new JobDto("job_1", "Développeur Java", "TechCorp", "Paris");
+        JobDto dto = new JobDto("job_1", "Java Developer", "TechCorp", "Paris");
         when(jobRepository.findById(1L)).thenReturn(Optional.of(job));
         when(jobMapper.toDto(job)).thenReturn(dto);
 
@@ -64,7 +64,7 @@ class JobServiceTest {
     @Test
     void getJobs_shouldMapPage() {
         Job job = new Job();
-        JobDto dto = new JobDto("job_1", "Développeur Java", "TechCorp", "Paris");
+        JobDto dto = new JobDto("job_1", "Java Developer", "TechCorp", "Paris");
         Page<Job> page = new PageImpl<>(List.of(job));
         PageRequest pageable = PageRequest.of(0, 10);
 
@@ -79,10 +79,10 @@ class JobServiceTest {
 
     @Test
     void saveJob_shouldSaveAndReturnDto() {
-        JobRequestDto request = new JobRequestDto("job_1", "Développeur Java", "TechCorp", "Paris");
+        JobRequestDto request = new JobRequestDto("job_1", "Java Developer", "TechCorp", "Paris");
         Job entity = new Job();
         Job saved = new Job();
-        JobDto dto = new JobDto("job_1", "Développeur Java", "TechCorp", "Paris");
+        JobDto dto = new JobDto("job_1", "Java Developer", "TechCorp", "Paris");
 
         when(jobRepository.existsByExternalId("job_1")).thenReturn(false);
         when(jobMapper.toEntity(request)).thenReturn(entity);
@@ -97,7 +97,7 @@ class JobServiceTest {
 
     @Test
     void saveJob_shouldThrowConflictWhenExternalIdAlreadyExists() {
-        JobRequestDto request = new JobRequestDto("job_1", "Développeur Java", "TechCorp", "Paris");
+        JobRequestDto request = new JobRequestDto("job_1", "Java Developer", "TechCorp", "Paris");
         when(jobRepository.existsByExternalId("job_1")).thenReturn(true);
 
         assertThatThrownBy(() -> jobService.saveJob(request))

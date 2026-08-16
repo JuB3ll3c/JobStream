@@ -30,7 +30,7 @@ class JobRepositoryTest {
     private Job createJob(String externalId) {
         Job job = new Job();
         job.setExternalId(externalId);
-        job.setTitle("Développeur Java");
+        job.setTitle("Java Developer");
         job.setCompany("TechCorp");
         job.setLocation("Paris");
         job.setDescription("Description");
@@ -95,7 +95,7 @@ class JobRepositoryTest {
     void update_shouldIncrementVersion() {
         Job saved = jobRepository.save(createJob("job_version"));
 
-        saved.setTitle("Titre modifié");
+        saved.setTitle("Updated title");
         Job updated = jobRepository.saveAndFlush(saved);
 
         assertThat(updated.getVersion()).isEqualTo(1);

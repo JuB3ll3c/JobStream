@@ -15,15 +15,15 @@ import java.util.Objects;
 @Log4j2
 public class AdzunaMapper {
     /**
-     * Map un job Adzuna vers JobDto
+     * Maps an Adzuna job to JobDto
      */
 
     public JobDto mapToJobDto(Map<String, Object> jobData) {
-        // ID externe
+        // External ID
         String externalId = getString(jobData, "id");
         String title = getString(jobData, "title");
 
-        // Company - peut être String ou Map
+        // Company - can be a String or a Map
         Object companyObj = jobData.get("company");
         String company;
         if (companyObj instanceof Map) {
@@ -32,7 +32,7 @@ public class AdzunaMapper {
             company = companyObj != null ? companyObj.toString() : null;
         }
 
-        // Location - peut être String ou Map
+        // Location - can be a String or a Map
         Object locationObj = jobData.get("location");
         String location;
         if (locationObj instanceof Map) {
@@ -81,7 +81,7 @@ public class AdzunaMapper {
                 LocalDate date = LocalDate.parse(dateStr);
                 job.setPostedDate(date);
             } catch (Exception e) {
-                log.debug("Date Adzuna non parsable: '{}'", postedDate);
+                log.debug("Unparsable Adzuna date: '{}'", postedDate);
             }
         }
 
@@ -110,7 +110,7 @@ public class AdzunaMapper {
                 .filter(Objects::nonNull)
                 .toList();
 
-        // Adzuna ne retourne pas toujours un total, on utilise count ou jobs.size()
+        // Adzuna does not always return a total, use count or jobs.size()
         Integer count = extractNumber(response, "count");
 
         AdzunaJobSearchResponse result = new AdzunaJobSearchResponse();

@@ -35,7 +35,7 @@ class AdzunaServiceTest {
     void searchJobs_shouldDelegateToClientAndMapResult() {
         Map<String, Object> rawResponse = Map.of("count", 1);
         AdzunaJobSearchResponse mapped = new AdzunaJobSearchResponse();
-        mapped.setJobs(List.of(new JobDto("job_1", "Titre", "Société", "Lyon")));
+        mapped.setJobs(List.of(new JobDto("job_1", "Title", "Company", "Lyon")));
         mapped.setTotal(1);
         mapped.setCount(1);
 
@@ -65,7 +65,7 @@ class AdzunaServiceTest {
     @Test
     void getJobById_shouldReturnJobWhenIdMatches() {
         Map<String, Object> rawResponse = Map.of("count", 1);
-        JobDto job = new JobDto("job_1", "Développeur Java", "TechCorp", "Paris");
+        JobDto job = new JobDto("job_1", "Java Developer", "TechCorp", "Paris");
         AdzunaJobSearchResponse mapped = new AdzunaJobSearchResponse();
         mapped.setJobs(List.of(job));
 
@@ -83,7 +83,7 @@ class AdzunaServiceTest {
     void getJobById_shouldThrowNotFoundWhenNoIdMatches() {
         Map<String, Object> rawResponse = Map.of("results", List.of());
         AdzunaJobSearchResponse mapped = new AdzunaJobSearchResponse();
-        mapped.setJobs(List.of(new JobDto("job_999", "Autre offre", "Boite", "Lyon")));
+        mapped.setJobs(List.of(new JobDto("job_999", "Another job", "Company", "Lyon")));
 
         when(adzunaClient.callAdzunaApi("job_1", null, null, null)).thenReturn(rawResponse);
         when(adzunaMapper.toJobSearchResponse(rawResponse)).thenReturn(mapped);

@@ -27,10 +27,10 @@ class JobMapperTest {
         Job job = new Job();
         job.setId(42L);
         job.setExternalId("job_1");
-        job.setTitle("Développeur Java");
+        job.setTitle("Java Developer");
         job.setCompany("TechCorp");
         job.setLocation("Paris");
-        job.setDescription("Description complète");
+        job.setDescription("Full description");
         job.setSalaryMin(50000);
         job.setSalaryMax(80000);
         job.setContractType("CDI");
@@ -44,10 +44,10 @@ class JobMapperTest {
 
         assertThat(dto.getId()).isEqualTo(42L);
         assertThat(dto.getExternalId()).isEqualTo("job_1");
-        assertThat(dto.getTitle()).isEqualTo("Développeur Java");
+        assertThat(dto.getTitle()).isEqualTo("Java Developer");
         assertThat(dto.getCompany()).isEqualTo("TechCorp");
         assertThat(dto.getLocation()).isEqualTo("Paris");
-        assertThat(dto.getDescription()).isEqualTo("Description complète");
+        assertThat(dto.getDescription()).isEqualTo("Full description");
         assertThat(dto.getSalaryMin()).isEqualTo(50000);
         assertThat(dto.getSalaryMax()).isEqualTo(80000);
         assertThat(dto.getContractType()).isEqualTo("CDI");
@@ -60,8 +60,8 @@ class JobMapperTest {
 
     @Test
     void toEntity_shouldMapRequest() {
-        JobRequestDto request = new JobRequestDto("job_1", "Développeur Java", "TechCorp", "Paris");
-        request.setDescription("Description complète");
+        JobRequestDto request = new JobRequestDto("job_1", "Java Developer", "TechCorp", "Paris");
+        request.setDescription("Full description");
         request.setSalaryMin(50000);
         request.setSalaryMax(80000);
         request.setContractType("CDI");
@@ -73,10 +73,10 @@ class JobMapperTest {
 
         assertThat(job.getId()).isNull();
         assertThat(job.getExternalId()).isEqualTo("job_1");
-        assertThat(job.getTitle()).isEqualTo("Développeur Java");
+        assertThat(job.getTitle()).isEqualTo("Java Developer");
         assertThat(job.getCompany()).isEqualTo("TechCorp");
         assertThat(job.getLocation()).isEqualTo("Paris");
-        assertThat(job.getDescription()).isEqualTo("Description complète");
+        assertThat(job.getDescription()).isEqualTo("Full description");
         assertThat(job.getSalaryMin()).isEqualTo(50000);
         assertThat(job.getSalaryMax()).isEqualTo(80000);
         assertThat(job.getContractType()).isEqualTo("CDI");

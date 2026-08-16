@@ -71,8 +71,8 @@ public class AdzunaClient {
 
         } catch (RestClientException e) {
             long duration = System.currentTimeMillis() - startTime;
-            log.error("Erreur lors de l'appel à Adzuna API après {}ms: {}", duration, e.getMessage());
-            throw new ExternalApiException("Adzuna", "Erreur lors de la recherche d'offres", HttpStatus.BAD_GATEWAY.value(), e);
+            log.error("Error while calling Adzuna API after {}ms: {}", duration, e.getMessage());
+            throw new ExternalApiException("Adzuna", "Error while searching for jobs", HttpStatus.BAD_GATEWAY.value(), e);
         }
     }
 }

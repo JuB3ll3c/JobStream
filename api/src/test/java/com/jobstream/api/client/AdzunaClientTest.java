@@ -93,7 +93,7 @@ class AdzunaClientTest {
 
         assertThatThrownBy(() -> client.callAdzunaApi("java", 1, 20, null))
                 .isInstanceOf(ExternalApiException.class)
-                .hasMessageContaining("Erreur lors de la recherche d'offres")
+                .hasMessageContaining("Error while searching for jobs")
                 .hasCauseInstanceOf(Exception.class);
     }
 }

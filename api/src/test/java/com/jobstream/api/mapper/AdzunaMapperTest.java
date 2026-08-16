@@ -29,10 +29,10 @@ class AdzunaMapperTest {
 
         Map<String, Object> jobData = new HashMap<>();
         jobData.put("id", "job_123");
-        jobData.put("title", "Développeur Java");
+        jobData.put("title", "Java Developer");
         jobData.put("company", company);
         jobData.put("location", location);
-        jobData.put("description", "Une super offre");
+        jobData.put("description", "A great job");
         jobData.put("salary_min", 50000);
         jobData.put("salary_max", "80000");
         jobData.put("contract_time", "full_time");
@@ -43,10 +43,10 @@ class AdzunaMapperTest {
         JobDto job = mapper.mapToJobDto(jobData);
 
         assertThat(job.getExternalId()).isEqualTo("job_123");
-        assertThat(job.getTitle()).isEqualTo("Développeur Java");
+        assertThat(job.getTitle()).isEqualTo("Java Developer");
         assertThat(job.getCompany()).isEqualTo("TechCorp");
         assertThat(job.getLocation()).isEqualTo("Paris, France");
-        assertThat(job.getDescription()).isEqualTo("Une super offre");
+        assertThat(job.getDescription()).isEqualTo("A great job");
         assertThat(job.getSalaryMin()).isEqualTo(50000);
         assertThat(job.getSalaryMax()).isEqualTo(80000);
         assertThat(job.getContractType()).isEqualTo("full_time");
@@ -59,14 +59,14 @@ class AdzunaMapperTest {
     void mapToJobDto_shouldMapCompanyAsString() {
         Map<String, Object> jobData = Map.of(
                 "id", "job_1",
-                "title", "Titre",
-                "company", "Société Simple",
+                "title", "Title",
+                "company", "Simple Company",
                 "location", "Lyon"
         );
 
         JobDto job = mapper.mapToJobDto(jobData);
 
-        assertThat(job.getCompany()).isEqualTo("Société Simple");
+        assertThat(job.getCompany()).isEqualTo("Simple Company");
         assertThat(job.getLocation()).isEqualTo("Lyon");
     }
 
@@ -74,15 +74,15 @@ class AdzunaMapperTest {
     void mapToJobDto_shouldHandleMissingOptionalFieldsWithoutNpe() {
         Map<String, Object> jobData = Map.of(
                 "id", "job_2",
-                "title", "Titre",
-                "company", "Société",
+                "title", "Title",
+                "company", "Company",
                 "location", "Lyon"
         );
 
         JobDto job = mapper.mapToJobDto(jobData);
 
         assertThat(job.getExternalId()).isEqualTo("job_2");
-        assertThat(job.getTitle()).isEqualTo("Titre");
+        assertThat(job.getTitle()).isEqualTo("Title");
         assertThat(job.getDescription()).isNull();
         assertThat(job.getSalaryMin()).isNull();
         assertThat(job.getSalaryMax()).isNull();
@@ -96,8 +96,8 @@ class AdzunaMapperTest {
     void mapToJobDto_shouldFallbackOnContractType() {
         Map<String, Object> jobData = Map.of(
                 "id", "job_3",
-                "title", "Titre",
-                "company", "Société",
+                "title", "Title",
+                "company", "Company",
                 "location", "Lyon",
                 "contract_type", "permanent"
         );
@@ -141,8 +141,8 @@ class AdzunaMapperTest {
     void mapToJobDto_shouldParseStringSalary() {
         Map<String, Object> jobData = Map.of(
                 "id", "job_4",
-                "title", "Titre",
-                "company", "Société",
+                "title", "Title",
+                "company", "Company",
                 "location", "Lyon",
                 "salary_min", "45000",
                 "salary_max", 55000
@@ -158,8 +158,8 @@ class AdzunaMapperTest {
     void mapToJobDto_shouldReturnNullSalaryForNonNumericString() {
         Map<String, Object> jobData = Map.of(
                 "id", "job_5",
-                "title", "Titre",
-                "company", "Société",
+                "title", "Title",
+                "company", "Company",
                 "location", "Lyon",
                 "salary_min", "non-numeric"
         );
@@ -173,8 +173,8 @@ class AdzunaMapperTest {
     void mapToJobDto_shouldIgnoreCategoryWhenNotAMap() {
         Map<String, Object> jobData = Map.of(
                 "id", "job_6",
-                "title", "Titre",
-                "company", "Société",
+                "title", "Title",
+                "company", "Company",
                 "location", "Lyon",
                 "category", "IT Jobs"
         );
@@ -220,8 +220,8 @@ class AdzunaMapperTest {
     void toJobSearchResponse_shouldMapResultsWithCountAsTotal() {
         Map<String, Object> jobData = Map.of(
                 "id", "job_7",
-                "title", "Titre",
-                "company", "Société",
+                "title", "Title",
+                "company", "Company",
                 "location", "Lyon"
         );
         Map<String, Object> response = Map.of("results", List.of(jobData), "count", 150);
@@ -238,8 +238,8 @@ class AdzunaMapperTest {
     void toJobSearchResponse_shouldUseJobsSizeWhenCountMissing() {
         Map<String, Object> jobData = Map.of(
                 "id", "job_8",
-                "title", "Titre",
-                "company", "Société",
+                "title", "Title",
+                "company", "Company",
                 "location", "Lyon"
         );
         Map<String, Object> response = Map.of("results", List.of(jobData, jobData));
@@ -253,8 +253,8 @@ class AdzunaMapperTest {
     private Map<String, Object> jobWithCreated(String created) {
         Map<String, Object> jobData = new HashMap<>();
         jobData.put("id", "job_x");
-        jobData.put("title", "Titre");
-        jobData.put("company", "Société");
+        jobData.put("title", "Title");
+        jobData.put("company", "Company");
         jobData.put("location", "Lyon");
         jobData.put("created", created);
         return jobData;

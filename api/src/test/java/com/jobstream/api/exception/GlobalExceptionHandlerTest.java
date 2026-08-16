@@ -21,15 +21,15 @@ class GlobalExceptionHandlerTest {
 
     @Test
     void handleExternalApiException_shouldReturnBadGateway() {
-        ExternalApiException ex = new ExternalApiException("Adzuna", "Erreur lors de la recherche d'offres", 502);
+        ExternalApiException ex = new ExternalApiException("Adzuna", "Error while searching for jobs", 502);
 
         ResponseEntity<ErrorResponse> response = handler.handleExternalApiException(ex);
 
         assertThat(response.getStatusCode().value()).isEqualTo(502);
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().getStatus()).isEqualTo(502);
-        assertThat(response.getBody().getError()).isEqualTo("Erreur lors de la communication avec le service externe");
-        assertThat(response.getBody().getMessage()).isEqualTo("Erreur lors de la recherche d'offres");
+        assertThat(response.getBody().getError()).isEqualTo("Error communicating with the external service");
+        assertThat(response.getBody().getMessage()).isEqualTo("Error while searching for jobs");
         assertThat(response.getBody().getDate()).isNotNull();
     }
 
@@ -46,7 +46,7 @@ class GlobalExceptionHandlerTest {
 
         assertThat(response.getStatusCode().value()).isEqualTo(400);
         assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().getError()).isEqualTo("Paramètres de requête invalides");
+        assertThat(response.getBody().getError()).isEqualTo("Invalid query parameters");
         assertThat(response.getBody().getMessage()).contains("query: must not be blank");
     }
 
@@ -59,7 +59,7 @@ class GlobalExceptionHandlerTest {
 
         assertThat(response.getStatusCode().value()).isEqualTo(400);
         assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().getError()).isEqualTo("Type de paramètre invalide");
+        assertThat(response.getBody().getError()).isEqualTo("Invalid parameter type");
         assertThat(response.getBody().getMessage()).contains("page").contains("abc");
     }
 
@@ -71,8 +71,8 @@ class GlobalExceptionHandlerTest {
 
         assertThat(response.getStatusCode().value()).isEqualTo(400);
         assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().getError()).isEqualTo("Format de requête invalide");
-        assertThat(response.getBody().getMessage()).isEqualTo("Le corps de la requête n'est pas un JSON valide");
+        assertThat(response.getBody().getError()).isEqualTo("Invalid request format");
+        assertThat(response.getBody().getMessage()).isEqualTo("The request body is not valid JSON");
     }
 
     @Test
@@ -84,7 +84,7 @@ class GlobalExceptionHandlerTest {
         assertThat(response.getStatusCode().value()).isEqualTo(500);
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().getStatus()).isEqualTo(500);
-        assertThat(response.getBody().getError()).isEqualTo("Erreur interne du serveur");
-        assertThat(response.getBody().getMessage()).isEqualTo("Une erreur inattendue s'est produite");
+        assertThat(response.getBody().getError()).isEqualTo("Internal server error");
+        assertThat(response.getBody().getMessage()).isEqualTo("An unexpected error occurred");
     }
 }

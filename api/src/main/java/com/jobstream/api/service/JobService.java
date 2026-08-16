@@ -22,7 +22,7 @@ public class JobService {
     public JobDto getJobById(Long id){
         return jobRepository.findById(id)
                 .map(jobMapper::toDto)
-                .orElseThrow(() -> new ResourceNotFoundException("Job non trouvé avec l'id : " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Job not found with id: " + id));
     }
 
     public Page<JobDto> getJobs(Pageable pageable) {
@@ -33,7 +33,7 @@ public class JobService {
     @Transactional
     public JobDto saveJob(JobRequestDto jobRequestDto){
         if (jobRepository.existsByExternalId(jobRequestDto.getExternalId())) {
-            throw new ResourceConflictException("Job déjà sauvegardé avec l'id externe : " + jobRequestDto.getExternalId());
+            throw new ResourceConflictException("Job already saved with external id: " + jobRequestDto.getExternalId());
         }
         return jobMapper.toDto(jobRepository.save(jobMapper.toEntity(jobRequestDto)));
     }
@@ -41,7 +41,7 @@ public class JobService {
     @Transactional
     public void deleteJob(Long id){
         if (!jobRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Job non trouvé avec l'id : " + id);
+            throw new ResourceNotFoundException("Job not found with id: " + id);
         }
         jobRepository.deleteById(id);
     }

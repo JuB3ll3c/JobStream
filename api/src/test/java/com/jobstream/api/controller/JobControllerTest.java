@@ -43,7 +43,7 @@ class JobControllerTest {
     private static final String JOB_JSON = """
             {
               "externalId": "job_1",
-              "title": "Développeur Java",
+              "title": "Java Developer",
               "company": "TechCorp",
               "location": "Paris"
             }
@@ -51,7 +51,7 @@ class JobControllerTest {
 
     @Test
     void getJobById_shouldReturn200WithJob() throws Exception {
-        JobDto job = new JobDto("job_1", "Développeur Java", "TechCorp", "Paris");
+        JobDto job = new JobDto("job_1", "Java Developer", "TechCorp", "Paris");
         job.setId(42L);
 
         when(jobService.getJobById(42L)).thenReturn(job);
@@ -60,23 +60,23 @@ class JobControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(42))
                 .andExpect(jsonPath("$.externalId").value("job_1"))
-                .andExpect(jsonPath("$.title").value("Développeur Java"));
+                .andExpect(jsonPath("$.title").value("Java Developer"));
     }
 
     @Test
     void getJobById_shouldReturn404WhenNotFound() throws Exception {
         when(jobService.getJobById(42L))
-                .thenThrow(new ResourceNotFoundException("Job non trouvé avec l'id : 42"));
+                .thenThrow(new ResourceNotFoundException("Job not found with id: 42"));
 
         mockMvc.perform(get("/jobs/42"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status").value(404))
-                .andExpect(jsonPath("$.error").value("Offre non trouvée"));
+                .andExpect(jsonPath("$.error").value("Job not found"));
     }
 
     @Test
     void getJobs_shouldReturn200WithPagedResponse() throws Exception {
-        JobDto job = new JobDto("job_1", "Développeur Java", "TechCorp", "Paris");
+        JobDto job = new JobDto("job_1", "Java Developer", "TechCorp", "Paris");
         PageImpl<JobDto> page = new PageImpl<>(List.of(job), PageRequest.of(0, 20), 1);
 
         when(jobService.getJobs(any(Pageable.class))).thenReturn(page);
@@ -91,7 +91,7 @@ class JobControllerTest {
 
     @Test
     void saveJob_shouldReturn201WithLocation() throws Exception {
-        JobDto saved = new JobDto("job_1", "Développeur Java", "TechCorp", "Paris");
+        JobDto saved = new JobDto("job_1", "Java Developer", "TechCorp", "Paris");
         saved.setId(42L);
 
         when(jobService.saveJob(any())).thenReturn(saved);
@@ -116,14 +116,14 @@ class JobControllerTest {
     @Test
     void saveJob_shouldReturn409WhenAlreadySaved() throws Exception {
         when(jobService.saveJob(any()))
-                .thenThrow(new ResourceConflictException("Job déjà sauvegardé"));
+                .thenThrow(new ResourceConflictException("Job already saved"));
 
         mockMvc.perform(post("/jobs")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(JOB_JSON))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.status").value(409))
-                .andExpect(jsonPath("$.error").value("Conflit de ressources"));
+                .andExpect(jsonPath("$.error").value("Resource conflict"));
     }
 
     @Test
@@ -136,7 +136,7 @@ class JobControllerTest {
 
     @Test
     void deleteJob_shouldReturn404WhenNotFound() throws Exception {
-        org.mockito.Mockito.doThrow(new ResourceNotFoundException("Job non trouvé avec l'id : 42"))
+        org.mockito.Mockito.doThrow(new ResourceNotFoundException("Job not found with id: 42"))
                 .when(jobService).deleteJob(42L);
 
         mockMvc.perform(delete("/jobs/42"))

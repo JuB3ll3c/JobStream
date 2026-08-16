@@ -1,7 +1,7 @@
 package com.jobstream.api.exception;
 
 /**
- * Exception levée lors d'erreurs avec les APIs externes (Adzuna, etc.)
+ * Exception thrown on errors with external APIs (Adzuna, etc.)
  */
 public class ExternalApiException extends RuntimeException {
 

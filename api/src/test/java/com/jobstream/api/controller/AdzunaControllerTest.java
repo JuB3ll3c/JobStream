@@ -34,7 +34,7 @@ class AdzunaControllerTest {
 
     @Test
     void searchJobs_shouldReturn200WithJobs() throws Exception {
-        JobDto job = new JobDto("job_1", "Développeur Java", "TechCorp", "Paris, France");
+        JobDto job = new JobDto("job_1", "Java Developer", "TechCorp", "Paris, France");
         job.setDescription("Description");
         job.setSalaryMin(50000);
         job.setSalaryMax(80000);
@@ -54,7 +54,7 @@ class AdzunaControllerTest {
                 .andExpect(jsonPath("$.total").value(150))
                 .andExpect(jsonPath("$.count").value(1))
                 .andExpect(jsonPath("$.jobs[0].externalId").value("job_1"))
-                .andExpect(jsonPath("$.jobs[0].title").value("Développeur Java"))
+                .andExpect(jsonPath("$.jobs[0].title").value("Java Developer"))
                 .andExpect(jsonPath("$.jobs[0].company").value("TechCorp"))
                 .andExpect(jsonPath("$.jobs[0].location").value("Paris, France"));
     }
@@ -64,7 +64,7 @@ class AdzunaControllerTest {
         mockMvc.perform(get("/adzuna/jobs").param("query", ""))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value(400))
-                .andExpect(jsonPath("$.error").value("Paramètres de requête invalides"));
+                .andExpect(jsonPath("$.error").value("Invalid query parameters"));
     }
 
     @Test
@@ -97,19 +97,19 @@ class AdzunaControllerTest {
     void searchJobs_shouldReturn400WhenPageIsNotANumber() throws Exception {
         mockMvc.perform(get("/adzuna/jobs").param("query", "java").param("page", "abc"))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("Type de paramètre invalide"));
+                .andExpect(jsonPath("$.error").value("Invalid parameter type"));
     }
 
     @Test
     void searchJobs_shouldReturn502WhenExternalApiFails() throws Exception {
         when(adzunaService.searchJobs("java", 1, 20, null))
-                .thenThrow(new ExternalApiException("Adzuna", "Erreur lors de la recherche d'offres", 502));
+                .thenThrow(new ExternalApiException("Adzuna", "Error while searching for jobs", 502));
 
         mockMvc.perform(get("/adzuna/jobs").param("query", "java"))
                 .andExpect(status().isBadGateway())
                 .andExpect(jsonPath("$.status").value(502))
-                .andExpect(jsonPath("$.error").value("Erreur lors de la communication avec le service externe"))
-                .andExpect(jsonPath("$.message").value("Erreur lors de la recherche d'offres"));
+                .andExpect(jsonPath("$.error").value("Error communicating with the external service"))
+                .andExpect(jsonPath("$.message").value("Error while searching for jobs"));
     }
 
     @Test
@@ -120,13 +120,13 @@ class AdzunaControllerTest {
         mockMvc.perform(get("/adzuna/jobs").param("query", "java"))
                 .andExpect(status().isInternalServerError())
                 .andExpect(jsonPath("$.status").value(500))
-                .andExpect(jsonPath("$.error").value("Erreur interne du serveur"));
+                .andExpect(jsonPath("$.error").value("Internal server error"));
     }
 
     @Test
     void getJobById_shouldReturn200WithJob() throws Exception {
-        JobDto job = new JobDto("job_1", "Développeur Java", "TechCorp", "Paris, France");
-        job.setDescription("Description complète");
+        JobDto job = new JobDto("job_1", "Java Developer", "TechCorp", "Paris, France");
+        job.setDescription("Full description");
         job.setSalaryMin(50000);
         job.setSalaryMax(80000);
 
@@ -135,7 +135,7 @@ class AdzunaControllerTest {
         mockMvc.perform(get("/adzuna/jobs/job_1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.externalId").value("job_1"))
-                .andExpect(jsonPath("$.title").value("Développeur Java"))
+                .andExpect(jsonPath("$.title").value("Java Developer"))
                 .andExpect(jsonPath("$.company").value("TechCorp"))
                 .andExpect(jsonPath("$.location").value("Paris, France"));
     }
@@ -143,11 +143,11 @@ class AdzunaControllerTest {
     @Test
     void getJobById_shouldReturn404WhenNotFound() throws Exception {
         when(adzunaService.getJobById("job_unknown"))
-                .thenThrow(new ResourceNotFoundException("Offre introuvable avec l'id: job_unknown"));
+                .thenThrow(new ResourceNotFoundException("Job not found with id: job_unknown"));
 
         mockMvc.perform(get("/adzuna/jobs/job_unknown"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status").value(404))
-                .andExpect(jsonPath("$.error").value("Offre non trouvée"));
+                .andExpect(jsonPath("$.error").value("Job not found"));
     }
 }

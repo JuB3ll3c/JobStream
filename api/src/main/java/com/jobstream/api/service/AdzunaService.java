@@ -28,6 +28,6 @@ public class AdzunaService {
                 .filter(job -> externalId.equals(job.getExternalId()))
                 .findFirst()
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        "Offre introuvable avec l'id: " + externalId));
+                        "Job not found with id: " + externalId));
     }
 }
