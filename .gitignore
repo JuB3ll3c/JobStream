@@ -25,3 +25,4 @@ logs/
 # Build
 build/
 out/
+/front/src/app/generated/

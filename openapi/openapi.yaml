@@ -9,7 +9,7 @@ info:
     **API-First approach**: This file is the source of truth.
     DTOs and clients are generated automatically from this spec.
 servers:
-  - url: http://localhost:8080
+  - url: http://localhost:8080/api
     description: Development server
 
 # ============================================================================

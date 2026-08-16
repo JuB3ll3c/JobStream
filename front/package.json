@@ -4,9 +4,12 @@
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
+    "prestart": "npm run generate:client",
     "build": "ng build",
+    "prebuild": "npm run generate:client",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "test": "ng test",
+    "generate:client": "openapi-generator-cli generate -i ../openapi/openapi.yaml -g typescript-angular -o src/app/generated --additional-properties=useSingleRequestParameter=true,providedIn=root --skip-validate-spec"
   },
   "private": true,
   "packageManager": "npm@11.12.1",
@@ -26,6 +29,7 @@
     "@angular/build": "^22.1.4",
     "@angular/cli": "^22.1.4",
     "@angular/compiler-cli": "^22.1.0",
+    "@openapitools/openapi-generator-cli": "^2.40.1",
     "jsdom": "^28.0.0",
     "prettier": "^3.8.1",
     "typescript": "~6.0.2",
