@@ -213,11 +213,9 @@
 
 							<typeMappings>
 								<typeMapping>DateTime=LocalDateTime</typeMapping>
-								<typeMapping>Pageable=Pageable</typeMapping>
 							</typeMappings>
 							<importMappings>
 								<importMapping>LocalDateTime=java.time.LocalDateTime</importMapping>
-								<importMapping>Pageable=org.springframework.data.domain.Pageable</importMapping>
 							</importMappings>
 
 							<configOptions>
@@ -225,7 +223,6 @@
 								<useSpringBoot3>true</useSpringBoot3>
 								<useTags>true</useTags>
 								<skipDefaultInterface>true</skipDefaultInterface>
-								<springDataPageable>true</springDataPageable>
 							</configOptions>
 						</configuration>
 					</execution>

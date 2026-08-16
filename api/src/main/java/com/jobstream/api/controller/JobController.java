@@ -7,12 +7,13 @@ import com.jobstream.dto.PagedJobResponse;
 import com.jobstream.endpoint.JobApi;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import java.net.URI;
+import java.util.List;
 
+import static com.jobstream.api.utils.PageUtils.toPageable;
 import static com.jobstream.api.utils.PageUtils.toPagedResponse;
 
 @RestController
@@ -33,8 +34,8 @@ public class JobController implements JobApi {
     }
 
     @Override
-    public ResponseEntity<PagedJobResponse> getJobs(Pageable pageable) {
-        Page<JobDto> jobDtoPage = jobService.getJobs(pageable);
+    public ResponseEntity<PagedJobResponse> getJobs(Integer page, Integer size, List<String> sort) {
+        Page<JobDto> jobDtoPage = jobService.getJobs(toPageable(page, size, sort));
         return ResponseEntity.ok(toPagedResponse(jobDtoPage));
     }
 
