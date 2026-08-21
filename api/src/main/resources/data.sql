@@ -1,0 +1,13 @@
+INSERT INTO app_user (first_name, last_name, email, password, role, created_at, updated_at) VALUES
+('Admin', 'JobStream', 'admin@jobstream.com', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'ADMIN', NOW(), NOW()),
+('Alice', 'Dupont', 'alice@test.com',        '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'USER',  NOW(), NOW()),
+('Bob', 'Martin', 'bob@test.com',            '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'USER',  NOW(), NOW());
+
+INSERT INTO job (external_id, title, company, location, description, salary_min, salary_max, contract_type, posted_date, job_url, requirements, user_id, created_at, updated_at) VALUES
+('adzuna_001', 'Senior Java Developer', 'TechCorp France', 'Paris, France', 'Recherche dev Java 17+ Spring Boot, microservices, PostgreSQL. Remote partiel.', 55000, 75000, 'CDI', '2026-03-20', 'https://example.com/job/adzuna_001', '["Java 17", "Spring Boot", "PostgreSQL", "Docker"]', 2, NOW(), NOW()),
+('adzuna_002', 'Data Engineer', 'DataFlow', 'Lyon, France', 'Pipeline data, Spark, Kafka, Airflow.', 45000, 65000, 'CDI', '2026-03-18', 'https://example.com/job/adzuna_002', '["Python", "Spark", "Kafka", "Airflow"]', 2, NOW(), NOW()),
+('adzuna_003', 'Frontend Angular Developer', 'WebAgency', 'Remote', 'Angular 17+, RxJS, Tailwind.', 40000, 55000, 'CDI', '2026-03-15', 'https://example.com/job/adzuna_003', '["Angular", "TypeScript", "RxJS", "SCSS"]', 2, NOW(), NOW()),
+('adzuna_004', 'DevOps Engineer', 'CloudOps', 'Toulouse, France', 'K8s, Terraform, CI/CD GitLab.', 50000, 70000, 'CDI', '2026-03-10', 'https://example.com/job/adzuna_004', '["Kubernetes", "Terraform", "Docker", "GitLab CI"]', 2, NOW(), NOW()),
+('adzuna_005', 'Product Manager', 'StartupXYZ', 'Paris, France', 'Roadmap produit, agile, discovery.', 48000, 62000, 'CDI', '2026-03-12', 'https://example.com/job/adzuna_005', '["Agile", "Roadmap", "Discovery"]', 3, NOW(), NOW()),
+('adzuna_006', 'UX Designer', 'Design Studio', 'Bordeaux, France', 'Figma, Design System, user research.', 38000, 52000, 'CDD', '2026-02-28', 'https://example.com/job/adzuna_006', '["Figma", "Design System", "User Research"]', 3, NOW(), NOW()),
+('adzuna_007', 'Stage Développeur Fullstack', 'InnovLab', 'Nantes, France', 'Stage 6 mois, Java + Angular.', NULL, NULL, 'Stage', '2026-03-01', 'https://example.com/job/adzuna_007', '["Java", "Angular", "SQL"]', NULL, NOW(), NOW());

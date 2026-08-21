@@ -1,7 +1,6 @@
 package com.jobstream.api.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.JdbcTypeCode;
@@ -41,4 +40,8 @@ public class Job extends BaseEntity{
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "requirements", columnDefinition = "jsonb")
     private List<String> requirements = new ArrayList<>();
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name="user_id")
+    private User user;
 }
