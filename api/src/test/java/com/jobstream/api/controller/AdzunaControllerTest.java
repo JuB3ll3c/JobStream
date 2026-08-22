@@ -2,13 +2,18 @@ package com.jobstream.api.controller;
 
 import com.jobstream.api.exception.ExternalApiException;
 import com.jobstream.api.exception.ResourceNotFoundException;
+import com.jobstream.api.repository.UserRepository;
 import com.jobstream.api.service.AdzunaService;
+import com.jobstream.api.service.JwtService;
 import com.jobstream.dto.AdzunaJobSearchResponse;
 import com.jobstream.dto.JobDto;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.data.jpa.mapping.JpaMetamodelMappingContext;
+import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -21,6 +26,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(AdzunaController.class)
+@AutoConfigureMockMvc(addFilters = false)
 class AdzunaControllerTest {
 
     @Autowired
@@ -31,6 +37,18 @@ class AdzunaControllerTest {
 
     @MockitoBean
     private JpaMetamodelMappingContext jpaMetamodelMappingContext;
+
+    @MockitoBean
+    private JwtService jwtService;
+
+    @MockitoBean
+    private UserRepository userRepository;
+
+    @MockitoBean
+    private UserDetailsService userDetailsService;
+
+    @MockitoBean
+    private AuthenticationProvider authenticationProvider;
 
     @Test
     void searchJobs_shouldReturn200WithJobs() throws Exception {

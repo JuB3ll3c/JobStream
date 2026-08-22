@@ -12,3 +12,7 @@ adzuna:
     app-id: test
     app-key: test
     default-country: ch
+app:
+  jwt:
+    secret: dGVzdHNlY3JldGtleXRlc3RzZWNyZXRrZXl0ZXN0c2VjcmV0a2V5MTIzNA==
+    access-token-expiration: 3600000

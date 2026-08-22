@@ -7,6 +7,7 @@ import jakarta.validation.Path;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.util.Set;
@@ -86,5 +87,43 @@ class GlobalExceptionHandlerTest {
         assertThat(response.getBody().getStatus()).isEqualTo(500);
         assertThat(response.getBody().getError()).isEqualTo("Internal server error");
         assertThat(response.getBody().getMessage()).isEqualTo("An unexpected error occurred");
+    }
+
+    @Test
+    void handleBadCredentials_shouldReturnUnauthorized() {
+        BadCredentialsException ex = new BadCredentialsException("Bad credentials");
+
+        ResponseEntity<ErrorResponse> response = handler.handleBadCredentials(ex);
+
+        assertThat(response.getStatusCode().value()).isEqualTo(401);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().getStatus()).isEqualTo(401);
+        assertThat(response.getBody().getError()).isEqualTo("Authentication failed");
+        assertThat(response.getBody().getMessage()).isEqualTo("Wrong email or password.");
+        assertThat(response.getBody().getDate()).isNotNull();
+    }
+
+    @Test
+    void handleConflict_shouldReturn409() {
+        ResourceConflictException ex = new ResourceConflictException("Already exists");
+
+        ResponseEntity<ErrorResponse> response = handler.handleConflict(ex);
+
+        assertThat(response.getStatusCode().value()).isEqualTo(409);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().getStatus()).isEqualTo(409);
+        assertThat(response.getBody().getError()).isEqualTo("Resource conflict");
+    }
+
+    @Test
+    void handleNotFound_shouldReturn404() {
+        com.jobstream.api.exception.ResourceNotFoundException ex =
+                new com.jobstream.api.exception.ResourceNotFoundException("Job not found");
+
+        ResponseEntity<ErrorResponse> response = handler.handleNotFound(ex);
+
+        assertThat(response.getStatusCode().value()).isEqualTo(404);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().getStatus()).isEqualTo(404);
     }
 }
