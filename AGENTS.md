@@ -25,7 +25,23 @@ Agents may implement code only in small, explicitly user-approved slices. Before
 
 Obtain explicit approval before adding a dependency, introducing a database migration or schema change, introducing a material architectural change, or departing from existing project patterns.
 
+Use test-driven development at pre-agreed seams where possible. For each approved slice, write one failing behavioral test, confirm that it fails for the expected reason, then add only enough implementation to make it pass. Do not write tests for later slices.
+
 After implementing the approved slice, run the relevant tests and report their commands and results. Then stop and summarize the changed files, completed behavior, and remaining work without starting another slice. Never create a Git commit unless explicitly authorized.
+
+## Agent skills
+
+### Issue tracker
+
+Issues and specs are stored as local Markdown files under `.scratch/`. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Local issues use the canonical triage roles as status values. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+This is a single-context repository with a root `CONTEXT.md` and root `docs/adr/`. See `docs/agents/domain.md`.
 
 ## Testing Guidelines
 
