@@ -25,5 +25,5 @@ adzuna:
 
 app:
   jwt:
-    secret: ${JWT_SECRET:}
+    secret: ${JWT_SECRET}
     access-token-expiration: 86400000      # 24 hours
