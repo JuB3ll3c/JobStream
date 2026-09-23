@@ -12,6 +12,9 @@ servers:
   - url: http://localhost:8080/api
     description: Development server
 
+security:
+  - bearerAuth: []
+
 # ============================================================================
 # PATHS - Endpoints RESTful
 # ============================================================================
@@ -25,6 +28,7 @@ paths:
         - Authentication
       summary: User registration
       operationId: register
+      security: []
       requestBody:
         required: true
         content:
@@ -44,12 +48,15 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          $ref: '#/components/responses/Conflict'
   /auth/login:
     post:
       tags:
         - Authentication
       summary: User connection
       operationId: login
+      security: []
       requestBody:
         required: true
         content:
@@ -64,7 +71,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/AuthResponse'
         '401':
-          description: Identifiants invalides (email ou mot de passe incorrect)
+          $ref: '#/components/responses/Unauthorized'
 
 
   # --------------------------------------------------------------------------
@@ -123,6 +130,10 @@ paths:
                 $ref: '#/components/schemas/AdzunaJobSearchResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '500':
           $ref: '#/components/responses/InternalError'
 
@@ -149,6 +160,10 @@ paths:
                 $ref: '#/components/schemas/JobDto'
         '404':
           $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /jobs/{id}:
     get:
       summary: Get a saved job detail
@@ -172,6 +187,10 @@ paths:
                 $ref: '#/components/schemas/JobDto'
         '404':
           $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
 
     delete:
       summary: Delete a saved job
@@ -191,6 +210,10 @@ paths:
           description: Job deleted
         '404':
           $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /jobs:
     get:
       summary: List saved jobs
@@ -234,6 +257,10 @@ paths:
                 $ref: '#/components/schemas/PagedJobResponse'
         '500':
           $ref: '#/components/responses/InternalError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
 
     post:
       summary: Save a job
@@ -255,12 +282,22 @@ paths:
                 $ref: '#/components/schemas/JobDto'
         '400':
           $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '409':
           $ref: '#/components/responses/Conflict'
 # ============================================================================
 # COMPONENTS - Schemas & Responses
 # ============================================================================
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
   schemas:
     RegisterRequest:
       type: object
@@ -307,6 +344,7 @@ components:
           example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
         tokenType:
           type: string
+          pattern: '^Bearer$'
           example: Bearer
 
     JobRequestDto:
@@ -445,7 +483,8 @@ components:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
           example:
-            code: "BAD_REQUEST"
+            status: 400
+            error: "Bad Request"
             message: "Invalid parameters"
 
     NotFound:
@@ -455,7 +494,8 @@ components:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
           example:
-            code: "NOT_FOUND"
+            status: 404
+            error: "Not Found"
             message: "Job not found"
 
     Conflict:
@@ -465,8 +505,31 @@ components:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
           example:
-            code: "CONFLICT"
+            status: 409
+            error: "Conflict"
             message: "Job already saved"
+
+    Unauthorized:
+      description: Authentication is required or the provided token is invalid
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            status: 401
+            error: "Unauthorized"
+            message: "Authentication is required"
+
+    Forbidden:
+      description: The authenticated user is not allowed to access this resource
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            status: 403
+            error: "Forbidden"
+            message: "Access denied"
 
     InternalError:
       description: Internal server error
@@ -475,5 +538,6 @@ components:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
           example:
-            code: "INTERNAL_ERROR"
+            status: 500
+            error: "Internal Server Error"
             message: "An unexpected error occurred"
