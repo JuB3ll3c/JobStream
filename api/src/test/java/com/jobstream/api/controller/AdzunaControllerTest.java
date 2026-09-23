@@ -1,5 +1,6 @@
 package com.jobstream.api.controller;
 
+import com.jobstream.api.config.RestAuthenticationEntryPoint;
 import com.jobstream.api.exception.ExternalApiException;
 import com.jobstream.api.exception.ResourceNotFoundException;
 import com.jobstream.api.repository.UserRepository;
@@ -49,6 +50,9 @@ class AdzunaControllerTest {
 
     @MockitoBean
     private AuthenticationProvider authenticationProvider;
+
+    @MockitoBean
+    private RestAuthenticationEntryPoint authenticationEntryPoint;
 
     @Test
     void searchJobs_shouldReturn200WithJobs() throws Exception {

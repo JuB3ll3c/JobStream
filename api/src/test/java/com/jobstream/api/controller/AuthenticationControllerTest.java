@@ -1,5 +1,6 @@
 package com.jobstream.api.controller;
 
+import com.jobstream.api.config.RestAuthenticationEntryPoint;
 import com.jobstream.api.exception.ResourceConflictException;
 import com.jobstream.api.repository.UserRepository;
 import com.jobstream.api.service.AuthenticationService;
@@ -47,6 +48,9 @@ class AuthenticationControllerTest {
 
     @MockitoBean
     private AuthenticationProvider authenticationProvider;
+
+    @MockitoBean
+    private RestAuthenticationEntryPoint authenticationEntryPoint;
 
     private static final String REGISTER_JSON = """
             {

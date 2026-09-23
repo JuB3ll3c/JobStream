@@ -1,7 +1,9 @@
 package com.jobstream.api.config;
 
 import com.jobstream.api.service.JwtService;
+import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.AfterEach;
@@ -12,16 +14,18 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.web.servlet.HandlerExceptionResolver;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
@@ -36,7 +40,7 @@ class JwtAuthenticationFilterTest {
     private UserDetailsService userDetailsService;
 
     @Mock
-    private HandlerExceptionResolver handlerExceptionResolver;
+    private RestAuthenticationEntryPoint authenticationEntryPoint;
 
     @Mock
     private HttpServletRequest request;
@@ -51,7 +55,7 @@ class JwtAuthenticationFilterTest {
 
     @BeforeEach
     void setUp() {
-        filter = new JwtAuthenticationFilter(handlerExceptionResolver, jwtService, userDetailsService);
+        filter = new JwtAuthenticationFilter(authenticationEntryPoint, jwtService, userDetailsService);
         SecurityContextHolder.clearContext();
     }
 
@@ -134,41 +138,56 @@ class JwtAuthenticationFilterTest {
     }
 
     @Test
-    void doFilter_shouldDelegateToExceptionResolver_whenExtractThrows() throws Exception {
+    void doFilter_shouldDelegateToAuthenticationEntryPoint_whenExtractThrows() throws Exception {
         when(request.getHeader("Authorization")).thenReturn("Bearer bad.token");
-        when(jwtService.extractUsername("bad.token")).thenThrow(new RuntimeException("invalid jwt"));
+        when(jwtService.extractUsername("bad.token")).thenThrow(new JwtException("invalid jwt"));
 
         filter.doFilterInternal(request, response, filterChain);
 
-        verify(handlerExceptionResolver).resolveException(eq(request), eq(response), isNull(), any(RuntimeException.class));
+        verify(authenticationEntryPoint).commence(eq(request), eq(response), any(AuthenticationException.class));
         verify(filterChain, never()).doFilter(request, response);
         assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
     }
 
     @Test
-    void doFilter_shouldDelegateToExceptionResolver_whenUserNotFound() throws Exception {
+    void doFilter_shouldDelegateToAuthenticationEntryPoint_whenUserNotFound() throws Exception {
         when(request.getHeader("Authorization")).thenReturn("Bearer valid.token");
         when(jwtService.extractUsername("valid.token")).thenReturn("unknown@test.com");
         when(userDetailsService.loadUserByUsername("unknown@test.com"))
-                .thenThrow(new org.springframework.security.core.userdetails.UsernameNotFoundException("not found"));
+                .thenThrow(new UsernameNotFoundException("not found"));
 
         filter.doFilterInternal(request, response, filterChain);
 
-        verify(handlerExceptionResolver).resolveException(eq(request), eq(response), isNull(), any(Exception.class));
+        verify(authenticationEntryPoint).commence(eq(request), eq(response), any(AuthenticationException.class));
         verify(filterChain, never()).doFilter(request, response);
     }
 
     @Test
-    void doFilter_shouldDelegateToExceptionResolver_whenIsTokenValidThrows() throws Exception {
+    void doFilter_shouldPropagateUnexpectedException_whenLoadingUserFails() throws Exception {
+        when(request.getHeader("Authorization")).thenReturn("Bearer valid.token");
+        when(jwtService.extractUsername("valid.token")).thenReturn("alice@test.com");
+        when(userDetailsService.loadUserByUsername("alice@test.com"))
+                .thenThrow(new IllegalArgumentException("unexpected user data"));
+
+        assertThatThrownBy(() -> filter.doFilterInternal(request, response, filterChain))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("unexpected user data");
+
+        verifyNoInteractions(authenticationEntryPoint);
+        verify(filterChain, never()).doFilter(request, response);
+    }
+
+    @Test
+    void doFilter_shouldDelegateToAuthenticationEntryPoint_whenIsTokenValidThrows() throws Exception {
         when(request.getHeader("Authorization")).thenReturn("Bearer valid.token");
         when(jwtService.extractUsername("valid.token")).thenReturn("alice@test.com");
         UserDetails userDetails = new User("alice@test.com", "pwd", List.of(new SimpleGrantedAuthority("ROLE_USER")));
         when(userDetailsService.loadUserByUsername("alice@test.com")).thenReturn(userDetails);
-        when(jwtService.isTokenValid("valid.token", userDetails)).thenThrow(new RuntimeException("validation error"));
+        when(jwtService.isTokenValid("valid.token", userDetails)).thenThrow(new JwtException("validation error"));
 
         filter.doFilterInternal(request, response, filterChain);
 
-        verify(handlerExceptionResolver).resolveException(eq(request), eq(response), isNull(), any(RuntimeException.class));
+        verify(authenticationEntryPoint).commence(eq(request), eq(response), any(AuthenticationException.class));
         verify(filterChain, never()).doFilter(request, response);
     }
 
@@ -182,5 +201,22 @@ class JwtAuthenticationFilterTest {
         verify(filterChain).doFilter(request, response);
         verify(userDetailsService, never()).loadUserByUsername(any());
         assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
+    }
+
+    @Test
+    void doFilter_shouldPropagateDownstreamException_whenTokenIsValid() throws Exception {
+        when(request.getHeader("Authorization")).thenReturn("Bearer valid.jwt.token");
+        when(jwtService.extractUsername("valid.jwt.token")).thenReturn("alice@test.com");
+        UserDetails userDetails = new User("alice@test.com", "pwd", List.of(new SimpleGrantedAuthority("ROLE_USER")));
+        when(userDetailsService.loadUserByUsername("alice@test.com")).thenReturn(userDetails);
+        when(jwtService.isTokenValid("valid.jwt.token", userDetails)).thenReturn(true);
+        doThrow(new ServletException("downstream failure"))
+                .when(filterChain).doFilter(request, response);
+
+        assertThatThrownBy(() -> filter.doFilterInternal(request, response, filterChain))
+                .isInstanceOf(ServletException.class)
+                .hasMessage("downstream failure");
+
+        verifyNoInteractions(authenticationEntryPoint);
     }
 }
