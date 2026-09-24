@@ -1,30 +1,23 @@
 import { inject, Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
 import { tap } from 'rxjs';
-import { AuthResponse, LoginRequest } from '../../../generated';
-
+import { AuthenticationService, LoginRequest } from '../../../generated';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class AuthService {
-
-  private readonly http = inject(HttpClient);
-
-  private readonly apiUrl = '/api/auth';
+  private readonly authenticationApi = inject(AuthenticationService);
 
   private readonly tokenKey = 'access_token';
   private readonly tokenTypeKey = 'token_type';
 
   login(request: LoginRequest) {
-    return this.http
-      .post<AuthResponse>(`${this.apiUrl}/login`, request)
-      .pipe(
-        tap(response => {
-          sessionStorage.setItem(this.tokenKey, response.accessToken);
-          sessionStorage.setItem(this.tokenTypeKey, response.tokenType);
-        })
-      );
+    return this.authenticationApi.login({ loginRequest: request }).pipe(
+      tap((response) => {
+        sessionStorage.setItem(this.tokenKey, response.accessToken);
+        sessionStorage.setItem(this.tokenTypeKey, response.tokenType);
+      }),
+    );
   }
 
   logout(): void {
