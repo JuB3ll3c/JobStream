@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
-import { NEVER, throwError } from 'rxjs';
+import { NEVER, of, throwError } from 'rxjs';
 
 import { AuthService } from '../../../core/service/auth/auth-service';
 import { Login } from './login';
@@ -52,6 +52,22 @@ describe('Login', () => {
       email: 'alice@test.com',
       password: 'password123',
     });
+  });
+
+  it('should navigate to the default route when authentication succeeds', () => {
+    authService.login.mockReturnValue(
+      of({
+        accessToken: 'jwt-token',
+        tokenType: 'Bearer',
+      }),
+    );
+    component.email.setValue('alice@test.com');
+    component.password.setValue('password123');
+
+    component.login();
+
+    expect(router.navigate).toHaveBeenCalledOnce();
+    expect(router.navigate).toHaveBeenCalledWith(['/']);
   });
 
   it('should display a generic message when authentication fails', () => {
