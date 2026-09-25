@@ -1,5 +1,11 @@
 import { TestBed } from '@angular/core/testing';
-import { HttpHandlerFn, HttpInterceptorFn, HttpRequest, HttpResponse } from '@angular/common/http';
+import {
+  HttpHandlerFn,
+  HttpHeaders,
+  HttpInterceptorFn,
+  HttpRequest,
+  HttpResponse,
+} from '@angular/common/http';
 import { firstValueFrom, of } from 'rxjs';
 
 import { authInterceptor } from './auth-interceptor';
@@ -68,4 +74,22 @@ describe('authInterceptor', () => {
       expect(authService.getToken).not.toHaveBeenCalled();
     },
   );
+
+  it('should leave an external request and its Authorization header unchanged', async () => {
+    authService.getToken.mockReturnValue('jobstream-token');
+    const request = new HttpRequest('GET', 'https://partner.example/jobs', {
+      headers: new HttpHeaders({ Authorization: 'Basic partner-credentials' }),
+    });
+    let forwardedRequest: HttpRequest<unknown> | undefined;
+    const next: HttpHandlerFn = (nextRequest) => {
+      forwardedRequest = nextRequest;
+      return of(new HttpResponse());
+    };
+
+    await firstValueFrom(interceptor(request, next));
+
+    expect(forwardedRequest).toBe(request);
+    expect(forwardedRequest?.headers.get('Authorization')).toBe('Basic partner-credentials');
+    expect(authService.getToken).not.toHaveBeenCalled();
+  });
 });

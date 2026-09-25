@@ -5,6 +5,10 @@ import { AuthService } from './auth-service';
 const PUBLIC_URLS = ['/api/auth/login', '/api/auth/register'];
 
 export const authInterceptor: HttpInterceptorFn = (request, next) => {
+  if (!request.url.startsWith('/api/')) {
+    return next(request);
+  }
+
   const authService = inject(AuthService);
   const isPublicUrl = PUBLIC_URLS.includes(request.url);
 
