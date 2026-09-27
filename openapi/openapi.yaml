@@ -316,8 +316,12 @@ components:
           minLength: 8
         firstName:
           type: string
+          minLength: 1
+          pattern: "^.*\\S.*$"
         lastName:
           type: string
+          minLength: 1
+          pattern: "^.*\\S.*$"
 
     LoginRequest:
       type: object
@@ -506,8 +510,8 @@ components:
             $ref: '#/components/schemas/ErrorResponse'
           example:
             status: 409
-            error: "Conflict"
-            message: "Job already saved"
+            error: "Resource conflict"
+            message: "Resource already exists"
 
     Unauthorized:
       description: Authentication is required or the provided token is invalid

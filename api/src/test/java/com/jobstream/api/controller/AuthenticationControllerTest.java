@@ -108,6 +108,40 @@ class AuthenticationControllerTest {
     }
 
     @Test
+    void register_shouldReturn400_whenFirstNameBlank() throws Exception {
+        String blankFirstName = """
+                {
+                  "email": "alice@test.com",
+                  "password": "password123",
+                  "firstName": "   ",
+                  "lastName": "Dupont"
+                }
+                """;
+
+        mockMvc.perform(post("/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(blankFirstName))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void register_shouldReturn400_whenLastNameBlank() throws Exception {
+        String blankLastName = """
+                {
+                  "email": "alice@test.com",
+                  "password": "password123",
+                  "firstName": "Alice",
+                  "lastName": "   "
+                }
+                """;
+
+        mockMvc.perform(post("/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(blankLastName))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void register_shouldReturn400_whenEmailInvalid() throws Exception {
         String badEmail = """
                 {
