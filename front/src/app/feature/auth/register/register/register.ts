@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import {
   AbstractControl,
   FormControl,
@@ -7,6 +7,10 @@ import {
   ValidationErrors,
   Validators,
 } from '@angular/forms';
+import { Router } from '@angular/router';
+
+import { AuthService } from '../../../../core/service/auth/auth-service';
+import { RegisterRequest } from '../../../../generated';
 
 function passwordsMatch(control: AbstractControl): ValidationErrors | null {
   return control.get('password')?.value === control.get('confirmPassword')?.value
@@ -21,6 +25,9 @@ function passwordsMatch(control: AbstractControl): ValidationErrors | null {
   styleUrl: './register.scss',
 })
 export class Register {
+  private readonly authService = inject(AuthService);
+  private readonly router = inject(Router);
+
   firstName = new FormControl('', {
     nonNullable: true,
     validators: [Validators.required, Validators.pattern(/\S/)],
@@ -60,6 +67,20 @@ export class Register {
   register(): void {
     if (this.registerForm.invalid) {
       this.registerForm.markAllAsTouched();
+      return;
     }
+
+    const registerRequest: RegisterRequest = {
+      firstName: this.firstName.value,
+      lastName: this.lastName.value,
+      email: this.email.value,
+      password: this.password.value,
+    };
+
+    this.authService.register(registerRequest).subscribe({
+      next: () => {
+        this.router.navigate(['/']);
+      },
+    });
   }
 }

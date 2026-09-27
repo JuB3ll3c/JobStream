@@ -1,14 +1,26 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { Router } from '@angular/router';
+import { NEVER, of } from 'rxjs';
 
+import { AuthService } from '../../../../core/service/auth/auth-service';
 import { Register } from './register';
 
 describe('Register', () => {
   let component: Register;
   let fixture: ComponentFixture<Register>;
+  let authService: { register: ReturnType<typeof vi.fn> };
+  let router: { navigate: ReturnType<typeof vi.fn> };
 
   beforeEach(async () => {
+    authService = { register: vi.fn() };
+    router = { navigate: vi.fn() };
+
     await TestBed.configureTestingModule({
       imports: [Register],
+      providers: [
+        { provide: AuthService, useValue: authService },
+        { provide: Router, useValue: router },
+      ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(Register);
@@ -23,6 +35,7 @@ describe('Register', () => {
   it('should touch all fields when the form is invalid', () => {
     component.register();
 
+    expect(authService.register).not.toHaveBeenCalled();
     expect(component.firstName.touched).toBe(true);
     expect(component.lastName.touched).toBe(true);
     expect(component.email.touched).toBe(true);
@@ -67,5 +80,43 @@ describe('Register', () => {
     expect(content).toContain('Email required');
     expect(content).toContain('Password required');
     expect(content).toContain('Password confirmation required');
+  });
+
+  it('should submit the registration data when the form is valid', () => {
+    authService.register.mockReturnValue(NEVER);
+    component.firstName.setValue('Alice');
+    component.lastName.setValue('Martin');
+    component.email.setValue('alice@test.com');
+    component.password.setValue('password123');
+    component.confirmPassword.setValue('password123');
+
+    component.register();
+
+    expect(authService.register).toHaveBeenCalledOnce();
+    expect(authService.register).toHaveBeenCalledWith({
+      firstName: 'Alice',
+      lastName: 'Martin',
+      email: 'alice@test.com',
+      password: 'password123',
+    });
+  });
+
+  it('should navigate to the default route when registration succeeds', () => {
+    authService.register.mockReturnValue(
+      of({
+        accessToken: 'jwt-token',
+        tokenType: 'Bearer',
+      }),
+    );
+    component.firstName.setValue('Alice');
+    component.lastName.setValue('Martin');
+    component.email.setValue('alice@test.com');
+    component.password.setValue('password123');
+    component.confirmPassword.setValue('password123');
+
+    component.register();
+
+    expect(router.navigate).toHaveBeenCalledOnce();
+    expect(router.navigate).toHaveBeenCalledWith(['/']);
   });
 });
