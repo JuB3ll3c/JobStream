@@ -90,6 +90,15 @@ class SecurityConfigTest {
     }
 
     @Test
+    void unlistedAuthenticationEndpoint_shouldRequireAuthentication() throws Exception {
+        mockMvc.perform(post("/auth/unlisted"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.status").value(401))
+                .andExpect(jsonPath("$.error").value("Unauthorized"))
+                .andExpect(jsonPath("$.message").value("Authentication is required"));
+    }
+
+    @Test
     void accessDeniedHandler_shouldReturnForbiddenErrorResponse() throws Exception {
         MockHttpServletResponse response = new MockHttpServletResponse();
 
@@ -121,6 +130,28 @@ class SecurityConfigTest {
                                 {
                                   "email": "alice@test.com",
                                   "password": "password123"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.accessToken").value("jwt-token"))
+                .andExpect(jsonPath("$.tokenType").value("Bearer"));
+    }
+
+    @Test
+    void registerEndpoint_shouldRemainPublic() throws Exception {
+        AuthResponse authResponse = new AuthResponse();
+        authResponse.setAccessToken("jwt-token");
+        authResponse.setTokenType("Bearer");
+        when(authenticationService.register(any())).thenReturn(authResponse);
+
+        mockMvc.perform(post("/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "email": "alice@test.com",
+                                  "password": "password123",
+                                  "firstName": "Alice",
+                                  "lastName": "Dupont"
                                 }
                                 """))
                 .andExpect(status().isOk())
