@@ -30,6 +30,7 @@ export class Register {
   private readonly router = inject(Router);
 
   emailAlreadyExistsError = signal(false);
+  registrationError = signal(false);
 
   firstName = new FormControl('', {
     nonNullable: true,
@@ -74,6 +75,7 @@ export class Register {
     }
 
     this.emailAlreadyExistsError.set(false);
+    this.registrationError.set(false);
 
     const registerRequest: RegisterRequest = {
       firstName: this.firstName.value,
@@ -89,6 +91,8 @@ export class Register {
       error: (error: HttpErrorResponse) => {
         if (error.status === 409) {
           this.emailAlreadyExistsError.set(true);
+        } else {
+          this.registrationError.set(true);
         }
       },
     });

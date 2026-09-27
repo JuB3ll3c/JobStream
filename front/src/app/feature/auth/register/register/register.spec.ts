@@ -161,4 +161,44 @@ describe('Register', () => {
       'An account already exists for this email address',
     );
   });
+
+  it('should display a generic message and stay on the page when registration fails', () => {
+    authService.register.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 500 })));
+    component.firstName.setValue('Alice');
+    component.lastName.setValue('Martin');
+    component.email.setValue('alice@test.com');
+    component.password.setValue('password123');
+    component.confirmPassword.setValue('password123');
+
+    component.register();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Registration failed. Please try again');
+    expect(fixture.nativeElement.textContent).not.toContain(
+      'An account already exists for this email address',
+    );
+    expect(router.navigate).not.toHaveBeenCalled();
+  });
+
+  it('should clear the generic error message before a new registration attempt', () => {
+    authService.register.mockReturnValueOnce(
+      throwError(() => new HttpErrorResponse({ status: 500 })),
+    );
+    component.firstName.setValue('Alice');
+    component.lastName.setValue('Martin');
+    component.email.setValue('alice@test.com');
+    component.password.setValue('password123');
+    component.confirmPassword.setValue('password123');
+    component.register();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Registration failed. Please try again');
+
+    authService.register.mockReturnValueOnce(NEVER);
+    component.register();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).not.toContain(
+      'Registration failed. Please try again',
+    );
+  });
 });

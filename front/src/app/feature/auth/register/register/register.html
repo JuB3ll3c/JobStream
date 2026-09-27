@@ -68,5 +68,9 @@
     <p>An account already exists for this email address</p>
   }
 
+  @if (registrationError()) {
+    <p>Registration failed. Please try again</p>
+  }
+
   <button type="submit">Register</button>
 </form>
