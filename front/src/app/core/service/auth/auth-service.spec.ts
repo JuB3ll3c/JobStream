@@ -1,16 +1,24 @@
 import { TestBed } from '@angular/core/testing';
 import { firstValueFrom, of, throwError } from 'rxjs';
 
-import { AuthenticationService, AuthResponse, LoginRequest } from '../../../generated';
+import {
+  AuthenticationService,
+  AuthResponse,
+  LoginRequest,
+  RegisterRequest,
+} from '../../../generated';
 import { AuthService } from './auth-service';
 
 describe('AuthService', () => {
   let service: AuthService;
-  let authenticationApi: { login: ReturnType<typeof vi.fn> };
+  let authenticationApi: {
+    login: ReturnType<typeof vi.fn>;
+    register: ReturnType<typeof vi.fn>;
+  };
 
   beforeEach(() => {
     sessionStorage.clear();
-    authenticationApi = { login: vi.fn() };
+    authenticationApi = { login: vi.fn(), register: vi.fn() };
 
     TestBed.configureTestingModule({
       providers: [{ provide: AuthenticationService, useValue: authenticationApi }],
@@ -52,6 +60,41 @@ describe('AuthService', () => {
     authenticationApi.login.mockReturnValue(throwError(() => new Error('Authentication failed')));
 
     await expect(firstValueFrom(service.login(request))).rejects.toThrow('Authentication failed');
+
+    expect(sessionStorage.getItem('access_token')).toBeNull();
+    expect(sessionStorage.getItem('token_type')).toBeNull();
+  });
+
+  it('should register through the generated API and store the authentication response', async () => {
+    const request: RegisterRequest = {
+      email: 'alice@test.com',
+      password: 'password123',
+      firstName: 'Alice',
+      lastName: 'Dupont',
+    };
+    const response: AuthResponse = {
+      accessToken: 'jwt-token',
+      tokenType: 'Bearer',
+    };
+    authenticationApi.register.mockReturnValue(of(response));
+
+    await expect(firstValueFrom(service.register(request))).resolves.toEqual(response);
+
+    expect(authenticationApi.register).toHaveBeenCalledWith({ registerRequest: request });
+    expect(sessionStorage.getItem('access_token')).toBe('jwt-token');
+    expect(sessionStorage.getItem('token_type')).toBe('Bearer');
+  });
+
+  it('should not store authentication data when registration fails', async () => {
+    const request: RegisterRequest = {
+      email: 'alice@test.com',
+      password: 'password123',
+      firstName: 'Alice',
+      lastName: 'Dupont',
+    };
+    authenticationApi.register.mockReturnValue(throwError(() => new Error('Registration failed')));
+
+    await expect(firstValueFrom(service.register(request))).rejects.toThrow('Registration failed');
 
     expect(sessionStorage.getItem('access_token')).toBeNull();
     expect(sessionStorage.getItem('token_type')).toBeNull();
