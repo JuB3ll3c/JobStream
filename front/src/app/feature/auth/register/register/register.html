@@ -1,0 +1,68 @@
+<form [formGroup]="registerForm" (ngSubmit)="register()">
+  <div>
+    <label for="firstName">First name</label>
+    <input id="firstName" type="text" formControlName="firstName" />
+
+    @if (firstName.touched && firstName.hasError('required')) {
+      <p>First name required</p>
+    }
+
+    @if (firstName.touched && firstName.hasError('pattern')) {
+      <p>First name cannot be blank</p>
+    }
+  </div>
+
+  <div>
+    <label for="lastName">Last name</label>
+    <input id="lastName" type="text" formControlName="lastName" />
+
+    @if (lastName.touched && lastName.hasError('required')) {
+      <p>Last name required</p>
+    }
+
+    @if (lastName.touched && lastName.hasError('pattern')) {
+      <p>Last name cannot be blank</p>
+    }
+  </div>
+
+  <div>
+    <label for="email">Email</label>
+    <input id="email" type="email" formControlName="email" />
+
+    @if (email.touched && email.hasError('required')) {
+      <p>Email required</p>
+    }
+
+    @if (email.touched && email.hasError('email')) {
+      <p>Email invalid</p>
+    }
+  </div>
+
+  <div>
+    <label for="password">Password</label>
+    <input id="password" type="password" formControlName="password" />
+
+    @if (password.touched && password.hasError('required')) {
+      <p>Password required</p>
+    }
+
+    @if (password.touched && password.hasError('minlength')) {
+      <p>Password must contain at least 8 characters</p>
+    }
+  </div>
+
+  <div>
+    <label for="confirmPassword">Password confirmation</label>
+    <input id="confirmPassword" type="password" formControlName="confirmPassword" />
+
+    @if (confirmPassword.touched && confirmPassword.hasError('required')) {
+      <p>Password confirmation required</p>
+    }
+
+    @if (confirmPassword.touched && registerForm.hasError('passwordMismatch')) {
+      <p>Passwords do not match</p>
+    }
+  </div>
+
+  <button type="submit">Register</button>
+</form>
