@@ -1,4 +1,5 @@
 import { authGuard } from './core/service/auth/auth-guard';
+import { Register } from './feature/auth/register/register/register';
 import { Jobs } from './feature/jobs/jobs/jobs';
 import { routes } from './app.routes';
 
@@ -16,5 +17,13 @@ describe('application routes', () => {
     expect(loginRoute?.canActivate).toBeUndefined();
     expect(jobsRoute?.canActivate).toEqual([authGuard]);
     await expect(jobsRoute?.loadComponent?.()).resolves.toBe(Jobs);
+  });
+
+  it('should expose the registration page without authentication', async () => {
+    const registerRoute = routes.find((route) => route.path === 'register');
+
+    expect(registerRoute).toBeDefined();
+    expect(registerRoute?.canActivate).toBeUndefined();
+    await expect(registerRoute?.loadComponent?.()).resolves.toBe(Register);
   });
 });
