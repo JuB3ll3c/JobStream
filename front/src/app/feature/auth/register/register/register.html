@@ -64,5 +64,9 @@
     }
   </div>
 
+  @if (emailAlreadyExistsError()) {
+    <p>An account already exists for this email address</p>
+  }
+
   <button type="submit">Register</button>
 </form>

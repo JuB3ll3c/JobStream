@@ -1,4 +1,5 @@
-import { Component, inject } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
+import { Component, inject, signal } from '@angular/core';
 import {
   AbstractControl,
   FormControl,
@@ -27,6 +28,8 @@ function passwordsMatch(control: AbstractControl): ValidationErrors | null {
 export class Register {
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
+
+  emailAlreadyExistsError = signal(false);
 
   firstName = new FormControl('', {
     nonNullable: true,
@@ -70,6 +73,8 @@ export class Register {
       return;
     }
 
+    this.emailAlreadyExistsError.set(false);
+
     const registerRequest: RegisterRequest = {
       firstName: this.firstName.value,
       lastName: this.lastName.value,
@@ -80,6 +85,11 @@ export class Register {
     this.authService.register(registerRequest).subscribe({
       next: () => {
         this.router.navigate(['/']);
+      },
+      error: (error: HttpErrorResponse) => {
+        if (error.status === 409) {
+          this.emailAlreadyExistsError.set(true);
+        }
       },
     });
   }

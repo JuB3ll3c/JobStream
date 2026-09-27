@@ -1,6 +1,7 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
-import { NEVER, of } from 'rxjs';
+import { NEVER, of, throwError } from 'rxjs';
 
 import { AuthService } from '../../../../core/service/auth/auth-service';
 import { Register } from './register';
@@ -118,5 +119,46 @@ describe('Register', () => {
 
     expect(router.navigate).toHaveBeenCalledOnce();
     expect(router.navigate).toHaveBeenCalledWith(['/']);
+  });
+
+  it('should display a specific message and stay on the page when the email already exists', () => {
+    authService.register.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 409 })));
+    component.firstName.setValue('Alice');
+    component.lastName.setValue('Martin');
+    component.email.setValue('alice@test.com');
+    component.password.setValue('password123');
+    component.confirmPassword.setValue('password123');
+
+    component.register();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain(
+      'An account already exists for this email address',
+    );
+    expect(router.navigate).not.toHaveBeenCalled();
+  });
+
+  it('should clear the email conflict message before a new registration attempt', () => {
+    authService.register.mockReturnValueOnce(
+      throwError(() => new HttpErrorResponse({ status: 409 })),
+    );
+    component.firstName.setValue('Alice');
+    component.lastName.setValue('Martin');
+    component.email.setValue('alice@test.com');
+    component.password.setValue('password123');
+    component.confirmPassword.setValue('password123');
+    component.register();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain(
+      'An account already exists for this email address',
+    );
+
+    authService.register.mockReturnValueOnce(NEVER);
+    component.register();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).not.toContain(
+      'An account already exists for this email address',
+    );
   });
 });
