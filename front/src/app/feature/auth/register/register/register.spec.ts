@@ -1,6 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { Router } from '@angular/router';
+import { provideRouter, Router } from '@angular/router';
 import { NEVER, of, throwError } from 'rxjs';
 
 import { AuthService } from '../../../../core/service/auth/auth-service';
@@ -10,20 +10,18 @@ describe('Register', () => {
   let component: Register;
   let fixture: ComponentFixture<Register>;
   let authService: { register: ReturnType<typeof vi.fn> };
-  let router: { navigate: ReturnType<typeof vi.fn> };
+  let router: Router;
 
   beforeEach(async () => {
     authService = { register: vi.fn() };
-    router = { navigate: vi.fn() };
 
     await TestBed.configureTestingModule({
       imports: [Register],
-      providers: [
-        { provide: AuthService, useValue: authService },
-        { provide: Router, useValue: router },
-      ],
+      providers: [{ provide: AuthService, useValue: authService }, provideRouter([])],
     }).compileComponents();
 
+    router = TestBed.inject(Router);
+    vi.spyOn(router, 'navigate').mockResolvedValue(true);
     fixture = TestBed.createComponent(Register);
     component = fixture.componentInstance;
     await fixture.whenStable();
@@ -200,5 +198,13 @@ describe('Register', () => {
     expect(fixture.nativeElement.textContent).not.toContain(
       'Registration failed. Please try again',
     );
+  });
+
+  it('should display a link to the login page', () => {
+    fixture.detectChanges();
+
+    const loginLink = fixture.nativeElement.querySelector('a[href="/login"]');
+    expect(loginLink).not.toBeNull();
+    expect(loginLink.textContent).toContain('Log in');
   });
 });
