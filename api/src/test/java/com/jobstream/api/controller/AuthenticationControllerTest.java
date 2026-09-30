@@ -6,6 +6,7 @@ import com.jobstream.api.repository.UserRepository;
 import com.jobstream.api.service.AuthenticationService;
 import com.jobstream.api.service.JwtService;
 import com.jobstream.dto.AuthResponse;
+import com.jobstream.dto.RoleDto;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -73,6 +74,7 @@ class AuthenticationControllerTest {
         AuthResponse response = new AuthResponse();
         response.setAccessToken("jwt-token");
         response.setTokenType("Bearer");
+        response.setRole(RoleDto.USER);
         when(authenticationService.register(any())).thenReturn(response);
 
         mockMvc.perform(post("/auth/register")
@@ -80,7 +82,8 @@ class AuthenticationControllerTest {
                         .content(REGISTER_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accessToken").value("jwt-token"))
-                .andExpect(jsonPath("$.tokenType").value("Bearer"));
+                .andExpect(jsonPath("$.tokenType").value("Bearer"))
+                .andExpect(jsonPath("$.role").value("USER"));
     }
 
     @Test
@@ -174,6 +177,7 @@ class AuthenticationControllerTest {
         AuthResponse response = new AuthResponse();
         response.setAccessToken("jwt-login");
         response.setTokenType("Bearer");
+        response.setRole(RoleDto.ADMIN);
         when(authenticationService.login(any())).thenReturn(response);
 
         mockMvc.perform(post("/auth/login")
@@ -181,7 +185,8 @@ class AuthenticationControllerTest {
                         .content(LOGIN_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accessToken").value("jwt-login"))
-                .andExpect(jsonPath("$.tokenType").value("Bearer"));
+                .andExpect(jsonPath("$.tokenType").value("Bearer"))
+                .andExpect(jsonPath("$.role").value("ADMIN"));
     }
 
     @Test

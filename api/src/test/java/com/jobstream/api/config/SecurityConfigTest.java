@@ -7,6 +7,7 @@ import com.jobstream.api.service.AuthenticationService;
 import com.jobstream.api.service.JobService;
 import com.jobstream.api.service.JwtService;
 import com.jobstream.dto.AuthResponse;
+import com.jobstream.dto.RoleDto;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -122,6 +123,7 @@ class SecurityConfigTest {
         AuthResponse authResponse = new AuthResponse();
         authResponse.setAccessToken("jwt-token");
         authResponse.setTokenType("Bearer");
+        authResponse.setRole(RoleDto.ADMIN);
         when(authenticationService.login(any())).thenReturn(authResponse);
 
         mockMvc.perform(post("/auth/login")
@@ -134,7 +136,8 @@ class SecurityConfigTest {
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accessToken").value("jwt-token"))
-                .andExpect(jsonPath("$.tokenType").value("Bearer"));
+                .andExpect(jsonPath("$.tokenType").value("Bearer"))
+                .andExpect(jsonPath("$.role").value("ADMIN"));
     }
 
     @Test
@@ -142,6 +145,7 @@ class SecurityConfigTest {
         AuthResponse authResponse = new AuthResponse();
         authResponse.setAccessToken("jwt-token");
         authResponse.setTokenType("Bearer");
+        authResponse.setRole(RoleDto.USER);
         when(authenticationService.register(any())).thenReturn(authResponse);
 
         mockMvc.perform(post("/auth/register")
@@ -156,6 +160,7 @@ class SecurityConfigTest {
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accessToken").value("jwt-token"))
-                .andExpect(jsonPath("$.tokenType").value("Bearer"));
+                .andExpect(jsonPath("$.tokenType").value("Bearer"))
+                .andExpect(jsonPath("$.role").value("USER"));
     }
 }
