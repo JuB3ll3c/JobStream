@@ -52,6 +52,7 @@ describe('AuthService', () => {
     expect(authenticationApi.login).toHaveBeenCalledWith({ loginRequest: request });
     expect(sessionStorage.getItem('access_token')).toBe('jwt-token');
     expect(sessionStorage.getItem('token_type')).toBe('Bearer');
+    expect(sessionStorage.getItem('role')).toBe('USER');
   });
 
   it('should not store authentication data when login fails', async () => {
@@ -65,6 +66,7 @@ describe('AuthService', () => {
 
     expect(sessionStorage.getItem('access_token')).toBeNull();
     expect(sessionStorage.getItem('token_type')).toBeNull();
+    expect(sessionStorage.getItem('role')).toBeNull();
   });
 
   it('should register through the generated API and store the authentication response', async () => {
@@ -86,6 +88,7 @@ describe('AuthService', () => {
     expect(authenticationApi.register).toHaveBeenCalledWith({ registerRequest: request });
     expect(sessionStorage.getItem('access_token')).toBe('jwt-token');
     expect(sessionStorage.getItem('token_type')).toBe('Bearer');
+    expect(sessionStorage.getItem('role')).toBe('USER');
   });
 
   it('should not store authentication data when registration fails', async () => {
@@ -101,6 +104,7 @@ describe('AuthService', () => {
 
     expect(sessionStorage.getItem('access_token')).toBeNull();
     expect(sessionStorage.getItem('token_type')).toBeNull();
+    expect(sessionStorage.getItem('role')).toBeNull();
   });
 
   it('should report the user as unauthenticated when no token is stored', () => {
@@ -113,5 +117,23 @@ describe('AuthService', () => {
 
     expect(service.getToken()).toBe('stored-jwt-token');
     expect(service.isAuthenticated()).toBe(true);
+  });
+
+  it('should return the stored role', () => {
+    sessionStorage.setItem('role', 'ADMIN');
+
+    expect(service.getRole()).toBe(RoleDto.Admin);
+  });
+
+  it('should remove all authentication data on logout', () => {
+    sessionStorage.setItem('access_token', 'stored-jwt-token');
+    sessionStorage.setItem('token_type', 'Bearer');
+    sessionStorage.setItem('role', 'ADMIN');
+
+    service.logout();
+
+    expect(sessionStorage.getItem('access_token')).toBeNull();
+    expect(sessionStorage.getItem('token_type')).toBeNull();
+    expect(sessionStorage.getItem('role')).toBeNull();
   });
 });

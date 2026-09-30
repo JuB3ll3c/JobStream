@@ -5,6 +5,7 @@ import {
   AuthResponse,
   LoginRequest,
   RegisterRequest,
+  RoleDto,
 } from '../../../generated';
 
 @Injectable({
@@ -15,6 +16,7 @@ export class AuthService {
 
   private readonly tokenKey = 'access_token';
   private readonly tokenTypeKey = 'token_type';
+  private readonly roleKey = 'role';
 
   login(request: LoginRequest) {
     return this.authenticationApi
@@ -31,11 +33,13 @@ export class AuthService {
   private storeAuthentication(response: AuthResponse): void {
     sessionStorage.setItem(this.tokenKey, response.accessToken);
     sessionStorage.setItem(this.tokenTypeKey, response.tokenType);
+    sessionStorage.setItem(this.roleKey, response.role);
   }
 
   logout(): void {
     sessionStorage.removeItem(this.tokenKey);
     sessionStorage.removeItem(this.tokenTypeKey);
+    sessionStorage.removeItem(this.roleKey);
   }
 
   getToken(): string | null {
@@ -44,6 +48,10 @@ export class AuthService {
 
   getTokenType(): string | null {
     return sessionStorage.getItem(this.tokenTypeKey);
+  }
+
+  getRole(): RoleDto | null {
+    return sessionStorage.getItem(this.roleKey) as RoleDto | null;
   }
 
   isAuthenticated(): boolean {
