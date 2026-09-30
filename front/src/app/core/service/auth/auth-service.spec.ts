@@ -125,6 +125,12 @@ describe('AuthService', () => {
     expect(service.getRole()).toBe(RoleDto.Admin);
   });
 
+  it('should return null when the stored role is unknown', () => {
+    sessionStorage.setItem('role', 'SUPER_ADMIN');
+
+    expect(service.getRole()).toBeNull();
+  });
+
   it('should remove all authentication data on logout', () => {
     sessionStorage.setItem('access_token', 'stored-jwt-token');
     sessionStorage.setItem('token_type', 'Bearer');

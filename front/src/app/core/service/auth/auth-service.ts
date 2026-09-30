@@ -51,7 +51,8 @@ export class AuthService {
   }
 
   getRole(): RoleDto | null {
-    return sessionStorage.getItem(this.roleKey) as RoleDto | null;
+    const role = sessionStorage.getItem(this.roleKey);
+    return Object.values(RoleDto).find((knownRole) => knownRole === role) ?? null;
   }
 
   isAuthenticated(): boolean {
