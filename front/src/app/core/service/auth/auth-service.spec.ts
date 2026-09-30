@@ -6,6 +6,7 @@ import {
   AuthResponse,
   LoginRequest,
   RegisterRequest,
+  RoleDto,
 } from '../../../generated';
 import { AuthService } from './auth-service';
 
@@ -42,6 +43,7 @@ describe('AuthService', () => {
     const response: AuthResponse = {
       accessToken: 'jwt-token',
       tokenType: 'Bearer',
+      role: RoleDto.User,
     };
     authenticationApi.login.mockReturnValue(of(response));
 
@@ -75,6 +77,7 @@ describe('AuthService', () => {
     const response: AuthResponse = {
       accessToken: 'jwt-token',
       tokenType: 'Bearer',
+      role: RoleDto.User,
     };
     authenticationApi.register.mockReturnValue(of(response));
 

@@ -336,11 +336,19 @@ components:
           type: string
           format: password
 
+    RoleDto:
+      type: string
+      enum:
+        - USER
+        - ADMIN
+      example: USER
+
     AuthResponse:
       type: object
       required:
         - accessToken
         - tokenType
+        - role
       properties:
         accessToken:
           type: string
@@ -350,6 +358,8 @@ components:
           type: string
           pattern: '^Bearer$'
           example: Bearer
+        role:
+          $ref: '#/components/schemas/RoleDto'
 
     JobRequestDto:
       type: object

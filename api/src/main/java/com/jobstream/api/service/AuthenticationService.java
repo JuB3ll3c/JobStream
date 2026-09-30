@@ -3,11 +3,11 @@ package com.jobstream.api.service;
 import com.jobstream.api.entity.Role;
 import com.jobstream.api.entity.User;
 import com.jobstream.api.exception.ResourceConflictException;
-import com.jobstream.api.exception.ResourceNotFoundException;
 import com.jobstream.api.repository.UserRepository;
 import com.jobstream.dto.AuthResponse;
 import com.jobstream.dto.LoginRequest;
 import com.jobstream.dto.RegisterRequest;
+import com.jobstream.dto.RoleDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -44,6 +44,7 @@ public class AuthenticationService {
         AuthResponse response = new AuthResponse();
         response.setAccessToken(jwtToken);
         response.setTokenType("Bearer");
+        response.setRole(RoleDto.fromValue(user.getRole().name()));
         return response;
     }
 
@@ -62,6 +63,7 @@ public class AuthenticationService {
         AuthResponse response = new AuthResponse();
         response.setAccessToken(jwtToken);
         response.setTokenType("Bearer");
+        response.setRole(RoleDto.fromValue(user.getRole().name()));
         return response;
     }
 }

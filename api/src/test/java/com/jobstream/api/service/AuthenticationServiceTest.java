@@ -7,6 +7,7 @@ import com.jobstream.api.repository.UserRepository;
 import com.jobstream.dto.AuthResponse;
 import com.jobstream.dto.LoginRequest;
 import com.jobstream.dto.RegisterRequest;
+import com.jobstream.dto.RoleDto;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -88,6 +89,7 @@ class AuthenticationServiceTest {
 
         assertThat(response.getAccessToken()).isEqualTo("jwt-token-123");
         assertThat(response.getTokenType()).isEqualTo("Bearer");
+        assertThat(response.getRole()).isEqualTo(RoleDto.USER);
     }
 
     @Test
@@ -116,7 +118,7 @@ class AuthenticationServiceTest {
 
         User user = new User();
         user.setEmail("alice@test.com");
-        user.setRole(Role.USER);
+        user.setRole(Role.ADMIN);
 
         Authentication auth = mock(Authentication.class);
         when(auth.getPrincipal()).thenReturn(user);
@@ -134,6 +136,7 @@ class AuthenticationServiceTest {
 
         assertThat(response.getAccessToken()).isEqualTo("jwt-valid");
         assertThat(response.getTokenType()).isEqualTo("Bearer");
+        assertThat(response.getRole()).isEqualTo(RoleDto.ADMIN);
     }
 
     @Test
