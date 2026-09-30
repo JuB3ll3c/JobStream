@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { Router } from '@angular/router';
+import { provideRouter, Router } from '@angular/router';
 import { NEVER, of, throwError } from 'rxjs';
 
 import { AuthService } from '../../../core/service/auth/auth-service';
@@ -9,20 +9,18 @@ describe('Login', () => {
   let component: Login;
   let fixture: ComponentFixture<Login>;
   let authService: { login: ReturnType<typeof vi.fn> };
-  let router: { navigate: ReturnType<typeof vi.fn> };
+  let router: Router;
 
   beforeEach(async () => {
     authService = { login: vi.fn() };
-    router = { navigate: vi.fn() };
 
     await TestBed.configureTestingModule({
       imports: [Login],
-      providers: [
-        { provide: AuthService, useValue: authService },
-        { provide: Router, useValue: router },
-      ],
+      providers: [{ provide: AuthService, useValue: authService }, provideRouter([])],
     }).compileComponents();
 
+    router = TestBed.inject(Router);
+    vi.spyOn(router, 'navigate').mockResolvedValue(true);
     fixture = TestBed.createComponent(Login);
     component = fixture.componentInstance;
     await fixture.whenStable();
@@ -92,5 +90,13 @@ describe('Login', () => {
 
     expect(component.loginError()).toBe(false);
     expect(authService.login).toHaveBeenCalledOnce();
+  });
+
+  it('should display a link to the registration page', () => {
+    fixture.detectChanges();
+
+    const registrationLink = fixture.nativeElement.querySelector('a[href="/register"]');
+    expect(registrationLink).not.toBeNull();
+    expect(registrationLink.textContent).toContain('Create an account');
   });
 });
