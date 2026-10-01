@@ -1,12 +1,23 @@
-// Include theming for Angular Material with `mat.theme()`.
-// This Sass mixin will define CSS variables that are used for styling Angular Material
-// components according to the Material 3 design spec.
-// Learn more about theming and how to use it for your application's
-// custom components at https://material.angular.dev/guide/theming
 @use '@angular/material' as mat;
+
+:root {
+  --jobstream-color-primary: #2563eb;
+  --jobstream-color-primary-dark: #1d4ed8;
+  --jobstream-color-accent: #0f766e;
+  --jobstream-color-background: #f4f7fb;
+  --jobstream-color-surface: #ffffff;
+  --jobstream-color-text: #172033;
+  --jobstream-color-muted: #64748b;
+  --jobstream-color-border: #dbe3ef;
+  --jobstream-radius-small: 0.5rem;
+  --jobstream-radius-medium: 0.75rem;
+  --jobstream-shadow-small: 0 1px 3px rgb(15 23 42 / 8%);
+  --jobstream-shadow-medium: 0 8px 24px rgb(15 23 42 / 8%);
+}
 
 html {
   height: 100%;
+
   @include mat.theme(
     (
       color: (
@@ -19,21 +30,36 @@ html {
   );
 }
 
-body {
-  // Default the application to a light color theme. This can be changed to
-  // `dark` to enable the dark color theme, or to `light dark` to defer to the
-  // user's system settings.
-  color-scheme: light;
-
-  // Set a default background, font and text colors for the application using
-  // Angular Material's system-level CSS variables. Learn more about these
-  // variables at https://material.angular.dev/guide/system-variables
-  background-color: var(--mat-sys-surface);
-  color: var(--mat-sys-on-surface);
-  font: var(--mat-sys-body-medium);
-
-  // Reset the user agent margin.
-  margin: 0;
-  height: 100%;
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
 }
-/* You can add global styles to this file, and also import other style files */
+
+body {
+  color-scheme: light;
+  min-height: 100%;
+  margin: 0;
+  background: var(--jobstream-color-background);
+  color: var(--jobstream-color-text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+a {
+  color: var(--jobstream-color-primary);
+  text-decoration-color: rgb(37 99 235 / 35%);
+  text-underline-offset: 0.2em;
+}
+
+a:hover {
+  color: var(--jobstream-color-primary-dark);
+}

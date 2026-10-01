@@ -1,6 +1,6 @@
-<nav>
-  <span>JobStream</span>
+<nav class="navbar" aria-label="Main navigation">
+  <span class="navbar__brand">JobStream</span>
   @if (isAuthenticated()) {
-    <button type="button" (click)="logout()">Logout</button>
+    <button class="navbar__logout" type="button" (click)="logout()">Logout</button>
   }
 </nav>
