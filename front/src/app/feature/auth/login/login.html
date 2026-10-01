@@ -1,45 +1,44 @@
-<form [formGroup]="loginForm" (ngSubmit)="login()">
+<main class="login-page">
+  <section class="login-card" aria-labelledby="login-title">
+    <header class="login-card__header">
+      <p class="login-card__eyebrow">Welcome back</p>
+      <h1 id="login-title">Sign in to JobStream</h1>
+      <p class="login-card__subtitle">Continue your search and keep your opportunities moving.</p>
+    </header>
 
-  <div>
-    <label for="email">Email</label>
+    <form class="login-form" [formGroup]="loginForm" (ngSubmit)="login()">
+      <div class="login-form__field">
+        <label for="email">Email</label>
+        <input id="email" type="email" formControlName="email" />
 
-    <input
-      id="email"
-      type="email"
-      formControlName="email"
-    />
+        @if (email.touched && email.hasError('required')) {
+          <p class="login-form__error">Email required</p>
+        }
 
-    @if (email.touched && email.hasError('required')) {
-    <p>Email required</p>
-    }
+        @if (email.touched && email.hasError('email')) {
+          <p class="login-form__error">Email invalid</p>
+        }
+      </div>
 
-    @if (email.touched && email.hasError('email')) {
-    <p>Email invalid</p>
-    }
-  </div>
+      <div class="login-form__field">
+        <label for="password">Password</label>
+        <input id="password" type="password" formControlName="password" />
 
-  <div>
-    <label for="password">Password</label>
+        @if (password.touched && password.hasError('required')) {
+          <p class="login-form__error">Password required</p>
+        }
+      </div>
 
-    <input
-      id="password"
-      type="password"
-      formControlName="password"
-    />
+      @if (loginError()) {
+        <p class="login-form__submit-error" role="alert">Email or password incorrect</p>
+      }
 
-    @if (password.touched && password.hasError('required')) {
-    <p>Password required</p>
-    }
-  </div>
+      <button class="login-form__submit" type="submit">Login</button>
+    </form>
 
-  @if (loginError()) {
-  <p>Email or password incorrect</p>
-  }
-
-  <button type="submit">
-    Login
-  </button>
-
-</form>
-
-<a routerLink="/register">Create an account</a>
+    <p class="login-card__footer">
+      New to JobStream?
+      <a routerLink="/register">Create an account</a>
+    </p>
+  </section>
+</main>
