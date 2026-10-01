@@ -81,6 +81,10 @@
   outline-offset: 2px;
 }
 
+.login-form input[aria-invalid='true'] {
+  border-color: #b42318;
+}
+
 .login-form__error,
 .login-form__submit-error {
   margin: 0;

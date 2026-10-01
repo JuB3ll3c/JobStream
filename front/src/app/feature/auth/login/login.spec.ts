@@ -38,6 +38,24 @@ describe('Login', () => {
     expect(component.password.touched).toBe(true);
   });
 
+  it('should associate invalid fields with their validation messages', () => {
+    component.login();
+    fixture.detectChanges();
+
+    const expectedErrorByField = {
+      email: 'email-error',
+      password: 'password-error',
+    };
+
+    for (const [fieldId, errorId] of Object.entries(expectedErrorByField)) {
+      const field = fixture.nativeElement.querySelector(`#${fieldId}`);
+
+      expect(field.getAttribute('aria-invalid')).toBe('true');
+      expect(field.getAttribute('aria-describedby')).toBe(errorId);
+      expect(fixture.nativeElement.querySelector(`#${errorId}`)).not.toBeNull();
+    }
+  });
+
   it('should submit the credentials through the authentication service when the form is valid', () => {
     authService.login.mockReturnValue(NEVER);
     component.email.setValue('alice@test.com');
