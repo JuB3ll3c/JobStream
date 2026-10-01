@@ -7,11 +7,14 @@ import { Navbar } from './navbar';
 describe('Navbar', () => {
   let component: Navbar;
   let fixture: ComponentFixture<Navbar>;
-  let authService: { logout: ReturnType<typeof vi.fn> };
+  let authService: {
+    isAuthenticated: ReturnType<typeof vi.fn>;
+    logout: ReturnType<typeof vi.fn>;
+  };
   let router: { navigate: ReturnType<typeof vi.fn> };
 
   beforeEach(async () => {
-    authService = { logout: vi.fn() };
+    authService = { isAuthenticated: vi.fn(() => true), logout: vi.fn() };
     router = { navigate: vi.fn() };
 
     await TestBed.configureTestingModule({
@@ -38,6 +41,16 @@ describe('Navbar', () => {
     expect(navbar).not.toBeNull();
     expect(navbar?.textContent).toContain('JobStream');
     expect(button?.textContent).toContain('Logout');
+  });
+
+  it('should hide the logout button when the user is not authenticated', () => {
+    authService.isAuthenticated.mockReturnValue(false);
+
+    fixture = TestBed.createComponent(Navbar);
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('nav')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('button')).toBeNull();
   });
 
   it('should log out and navigate to the login page when the logout button is clicked', () => {

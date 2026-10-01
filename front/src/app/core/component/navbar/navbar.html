@@ -1,4 +1,6 @@
 <nav>
   <span>JobStream</span>
-  <button type="button" (click)="logout()">Logout</button>
+  @if (isAuthenticated()) {
+    <button type="button" (click)="logout()">Logout</button>
+  }
 </nav>
