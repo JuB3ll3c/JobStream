@@ -81,6 +81,27 @@ describe('Register', () => {
     expect(content).toContain('Password confirmation required');
   });
 
+  it('should associate invalid fields with their validation messages', () => {
+    component.register();
+    fixture.detectChanges();
+
+    const expectedErrorByField = {
+      firstName: 'first-name-error',
+      lastName: 'last-name-error',
+      email: 'email-error',
+      password: 'password-error',
+      confirmPassword: 'confirm-password-error',
+    };
+
+    for (const [fieldId, errorId] of Object.entries(expectedErrorByField)) {
+      const field = fixture.nativeElement.querySelector(`#${fieldId}`);
+
+      expect(field.getAttribute('aria-invalid')).toBe('true');
+      expect(field.getAttribute('aria-describedby')).toBe(errorId);
+      expect(fixture.nativeElement.querySelector(`#${errorId}`)).not.toBeNull();
+    }
+  });
+
   it('should submit the registration data when the form is valid', () => {
     authService.register.mockReturnValue(NEVER);
     component.firstName.setValue('Alice');

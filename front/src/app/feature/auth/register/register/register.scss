@@ -1,0 +1,158 @@
+:host {
+  display: block;
+}
+
+.register-page {
+  display: grid;
+  min-height: calc(100vh - 4rem);
+  place-items: center;
+  padding: clamp(2rem, 6vw, 5rem) 1rem;
+}
+
+.register-card {
+  width: min(100%, 34rem);
+  padding: clamp(1.5rem, 5vw, 2.5rem);
+  border: 1px solid var(--jobstream-color-border);
+  border-radius: var(--jobstream-radius-medium);
+  background: var(--jobstream-color-surface);
+  box-shadow: var(--jobstream-shadow-medium);
+}
+
+.register-card__header {
+  margin-bottom: 2rem;
+}
+
+.register-card__eyebrow {
+  margin: 0 0 0.5rem;
+  color: var(--jobstream-color-accent);
+  font-size: 0.8125rem;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.register-card h1 {
+  margin: 0;
+  font-size: clamp(1.75rem, 5vw, 2.25rem);
+  line-height: 1.15;
+  letter-spacing: -0.035em;
+}
+
+.register-card__subtitle {
+  margin: 0.75rem 0 0;
+  color: var(--jobstream-color-muted);
+}
+
+.register-form {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.register-form__row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.register-form__field {
+  display: grid;
+  align-content: start;
+  gap: 0.45rem;
+}
+
+.register-form label {
+  font-size: 0.875rem;
+  font-weight: 650;
+}
+
+.register-form input {
+  width: 100%;
+  min-height: 2.875rem;
+  padding: 0.625rem 0.75rem;
+  border: 1px solid var(--jobstream-color-border);
+  border-radius: var(--jobstream-radius-small);
+  background: var(--jobstream-color-surface);
+  color: var(--jobstream-color-text);
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease;
+}
+
+.register-form input:hover {
+  border-color: var(--jobstream-color-muted);
+}
+
+.register-form input:focus-visible {
+  border-color: var(--jobstream-color-primary);
+  outline: 3px solid var(--jobstream-color-primary);
+  outline-offset: 2px;
+}
+
+.register-form input[aria-invalid='true'] {
+  border-color: #b42318;
+}
+
+.register-form__error,
+.register-form__submit-error {
+  margin: 0;
+  color: #b42318;
+  font-size: 0.875rem;
+}
+
+.register-form__submit-error {
+  padding: 0.75rem;
+  border: 1px solid #fda29b;
+  border-radius: var(--jobstream-radius-small);
+  background: #fef3f2;
+}
+
+.register-form__submit {
+  min-height: 2.875rem;
+  padding: 0.625rem 1rem;
+  border: 1px solid var(--jobstream-color-primary-dark);
+  border-radius: var(--jobstream-radius-small);
+  background: var(--jobstream-color-primary);
+  color: #ffffff;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background-color 150ms ease,
+    transform 150ms ease;
+}
+
+.register-form__submit:hover {
+  background: var(--jobstream-color-primary-dark);
+}
+
+.register-form__submit:active {
+  transform: translateY(1px);
+}
+
+.register-form__submit:focus-visible {
+  outline: 3px solid var(--jobstream-color-primary);
+  outline-offset: 2px;
+}
+
+.register-card__footer {
+  margin: 1.75rem 0 0;
+  color: var(--jobstream-color-muted);
+  font-size: 0.9375rem;
+  text-align: center;
+}
+
+.register-card__footer a {
+  font-weight: 700;
+}
+
+@media (max-width: 30rem) {
+  .register-page {
+    min-height: calc(100vh - 3.5rem);
+    align-items: start;
+    padding-block: 1.5rem;
+  }
+
+  .register-form__row {
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+  }
+}

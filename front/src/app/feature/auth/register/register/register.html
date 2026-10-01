@@ -1,78 +1,141 @@
-<form [formGroup]="registerForm" (ngSubmit)="register()">
-  <div>
-    <label for="firstName">First name</label>
-    <input id="firstName" type="text" formControlName="firstName" />
+<main class="register-page">
+  <section class="register-card" aria-labelledby="register-title">
+    <header class="register-card__header">
+      <p class="register-card__eyebrow">Start your search</p>
+      <h1 id="register-title">Create your JobStream account</h1>
+      <p class="register-card__subtitle">Keep your opportunities organized in one place.</p>
+    </header>
 
-    @if (firstName.touched && firstName.hasError('required')) {
-      <p>First name required</p>
-    }
+    <form class="register-form" [formGroup]="registerForm" (ngSubmit)="register()">
+      <div class="register-form__row">
+        <div class="register-form__field">
+          <label for="firstName">First name</label>
+          <input
+            id="firstName"
+            type="text"
+            formControlName="firstName"
+            [attr.aria-invalid]="firstName.touched && firstName.invalid"
+            [attr.aria-describedby]="
+              firstName.touched && firstName.invalid ? 'first-name-error' : null
+            "
+          />
 
-    @if (firstName.touched && firstName.hasError('pattern')) {
-      <p>First name cannot be blank</p>
-    }
-  </div>
+          @if (firstName.touched && firstName.hasError('required')) {
+            <p id="first-name-error" class="register-form__error">First name required</p>
+          }
 
-  <div>
-    <label for="lastName">Last name</label>
-    <input id="lastName" type="text" formControlName="lastName" />
+          @if (firstName.touched && firstName.hasError('pattern')) {
+            <p id="first-name-error" class="register-form__error">First name cannot be blank</p>
+          }
+        </div>
 
-    @if (lastName.touched && lastName.hasError('required')) {
-      <p>Last name required</p>
-    }
+        <div class="register-form__field">
+          <label for="lastName">Last name</label>
+          <input
+            id="lastName"
+            type="text"
+            formControlName="lastName"
+            [attr.aria-invalid]="lastName.touched && lastName.invalid"
+            [attr.aria-describedby]="
+              lastName.touched && lastName.invalid ? 'last-name-error' : null
+            "
+          />
 
-    @if (lastName.touched && lastName.hasError('pattern')) {
-      <p>Last name cannot be blank</p>
-    }
-  </div>
+          @if (lastName.touched && lastName.hasError('required')) {
+            <p id="last-name-error" class="register-form__error">Last name required</p>
+          }
 
-  <div>
-    <label for="email">Email</label>
-    <input id="email" type="email" formControlName="email" />
+          @if (lastName.touched && lastName.hasError('pattern')) {
+            <p id="last-name-error" class="register-form__error">Last name cannot be blank</p>
+          }
+        </div>
+      </div>
 
-    @if (email.touched && email.hasError('required')) {
-      <p>Email required</p>
-    }
+      <div class="register-form__field">
+        <label for="email">Email</label>
+        <input
+          id="email"
+          type="email"
+          formControlName="email"
+          [attr.aria-invalid]="email.touched && email.invalid"
+          [attr.aria-describedby]="email.touched && email.invalid ? 'email-error' : null"
+        />
 
-    @if (email.touched && email.hasError('email')) {
-      <p>Email invalid</p>
-    }
-  </div>
+        @if (email.touched && email.hasError('required')) {
+          <p id="email-error" class="register-form__error">Email required</p>
+        }
 
-  <div>
-    <label for="password">Password</label>
-    <input id="password" type="password" formControlName="password" />
+        @if (email.touched && email.hasError('email')) {
+          <p id="email-error" class="register-form__error">Email invalid</p>
+        }
+      </div>
 
-    @if (password.touched && password.hasError('required')) {
-      <p>Password required</p>
-    }
+      <div class="register-form__field">
+        <label for="password">Password</label>
+        <input
+          id="password"
+          type="password"
+          formControlName="password"
+          [attr.aria-invalid]="password.touched && password.invalid"
+          [attr.aria-describedby]="password.touched && password.invalid ? 'password-error' : null"
+        />
 
-    @if (password.touched && password.hasError('minlength')) {
-      <p>Password must contain at least 8 characters</p>
-    }
-  </div>
+        @if (password.touched && password.hasError('required')) {
+          <p id="password-error" class="register-form__error">Password required</p>
+        }
 
-  <div>
-    <label for="confirmPassword">Password confirmation</label>
-    <input id="confirmPassword" type="password" formControlName="confirmPassword" />
+        @if (password.touched && password.hasError('minlength')) {
+          <p id="password-error" class="register-form__error">
+            Password must contain at least 8 characters
+          </p>
+        }
+      </div>
 
-    @if (confirmPassword.touched && confirmPassword.hasError('required')) {
-      <p>Password confirmation required</p>
-    }
+      <div class="register-form__field">
+        <label for="confirmPassword">Password confirmation</label>
+        <input
+          id="confirmPassword"
+          type="password"
+          formControlName="confirmPassword"
+          [attr.aria-invalid]="
+            confirmPassword.touched &&
+            (confirmPassword.invalid || registerForm.hasError('passwordMismatch'))
+          "
+          [attr.aria-describedby]="
+            confirmPassword.touched &&
+            (confirmPassword.invalid || registerForm.hasError('passwordMismatch'))
+              ? 'confirm-password-error'
+              : null
+          "
+        />
 
-    @if (confirmPassword.touched && registerForm.hasError('passwordMismatch')) {
-      <p>Passwords do not match</p>
-    }
-  </div>
+        @if (confirmPassword.touched && confirmPassword.hasError('required')) {
+          <p id="confirm-password-error" class="register-form__error">
+            Password confirmation required
+          </p>
+        } @else if (confirmPassword.touched && registerForm.hasError('passwordMismatch')) {
+          <p id="confirm-password-error" class="register-form__error">Passwords do not match</p>
+        }
+      </div>
 
-  @if (emailAlreadyExistsError()) {
-    <p>An account already exists for this email address</p>
-  }
+      @if (emailAlreadyExistsError()) {
+        <p class="register-form__submit-error" role="alert">
+          An account already exists for this email address
+        </p>
+      }
 
-  @if (registrationError()) {
-    <p>Registration failed. Please try again</p>
-  }
+      @if (registrationError()) {
+        <p class="register-form__submit-error" role="alert">
+          Registration failed. Please try again
+        </p>
+      }
 
-  <button type="submit">Register</button>
-</form>
+      <button class="register-form__submit" type="submit">Register</button>
+    </form>
 
-<p>Already have an account? <a routerLink="/login">Log in</a></p>
+    <p class="register-card__footer">
+      Already have an account?
+      <a routerLink="/login">Log in</a>
+    </p>
+  </section>
+</main>
