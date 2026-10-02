@@ -188,7 +188,10 @@ paths:
   /jobs/{id}:
     get:
       summary: Get a saved job detail
+      description: Returns only an offer owned by the authenticated user. Missing offers and offers owned by another user both return 404.
       operationId: getJobById
+      x-spring-provide-args:
+        - '@org.springframework.security.core.annotation.AuthenticationPrincipal com.jobstream.api.entity.User user'
       tags:
         - Job
       parameters:
@@ -215,7 +218,10 @@ paths:
 
     delete:
       summary: Delete a saved job
+      description: Deletes only an offer owned by the authenticated user. Missing offers and offers owned by another user both return 404.
       operationId: deleteJob
+      x-spring-provide-args:
+        - '@org.springframework.security.core.annotation.AuthenticationPrincipal com.jobstream.api.entity.User user'
       tags:
         - Job
       parameters:
@@ -238,7 +244,10 @@ paths:
   /jobs:
     get:
       summary: List saved jobs
+      description: Lists only offers owned by the authenticated user. Pagination totals refer to that user's collection.
       operationId: getJobs
+      x-spring-provide-args:
+        - '@org.springframework.security.core.annotation.AuthenticationPrincipal com.jobstream.api.entity.User user'
       tags:
         - Job
       parameters:
@@ -285,7 +294,10 @@ paths:
 
     post:
       summary: Save a job
+      description: The owner is taken from the authentication context, never from the request body. A duplicate externalId within that user's collection returns 409; different users may save the same external offer.
       operationId: saveJob
+      x-spring-provide-args:
+        - '@org.springframework.security.core.annotation.AuthenticationPrincipal com.jobstream.api.entity.User user'
       tags:
         - Job
       requestBody:

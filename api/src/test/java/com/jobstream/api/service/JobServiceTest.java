@@ -1,129 +1,154 @@
 package com.jobstream.api.service;
 
+import com.jobstream.api.config.TestContainerConfig;
 import com.jobstream.api.entity.Job;
-import com.jobstream.api.exception.ResourceConflictException;
+import com.jobstream.api.entity.Role;
+import com.jobstream.api.entity.User;
 import com.jobstream.api.exception.ResourceNotFoundException;
-import com.jobstream.api.mapper.JobMapper;
+import com.jobstream.api.exception.ResourceConflictException;
 import com.jobstream.api.repository.JobRepository;
-import com.jobstream.dto.JobDto;
+import com.jobstream.api.repository.UserRepository;
 import com.jobstream.dto.JobRequestDto;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.Optional;
-
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.assertj.core.api.Assertions.assertThat;
 
-@ExtendWith(MockitoExtension.class)
+@SpringBootTest
+@ActiveProfiles("test")
+@Import(TestContainerConfig.class)
+@Transactional
 class JobServiceTest {
-
-    @Mock
-    private JobRepository jobRepository;
-
-    @Mock
-    private JobMapper jobMapper;
-
-    @InjectMocks
+    @Autowired
     private JobService jobService;
 
-    @Test
-    void getJobById_shouldReturnDtoWhenFound() {
+    @Autowired
+    private JobRepository jobRepository;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    private User alice;
+    private User bob;
+
+    @BeforeEach
+    void setUp() {
+        alice = createUser("alice@example.com");
+        bob = createUser("bob@example.com");
+    }
+
+    private User createUser(String email) {
+        User user = new User();
+        user.setEmail(email);
+        user.setPassword("unused");
+        user.setRole(Role.USER);
+        return userRepository.save(user);
+    }
+
+    private Job createJob(String externalId, User owner) {
         Job job = new Job();
-        JobDto dto = new JobDto("job_1", "Java Developer", "TechCorp", "Paris");
-        when(jobRepository.findById(1L)).thenReturn(Optional.of(job));
-        when(jobMapper.toDto(job)).thenReturn(dto);
-
-        JobDto result = jobService.getJobById(1L);
-
-        assertThat(result).isSameAs(dto);
-        verify(jobRepository).findById(1L);
-        verify(jobMapper).toDto(job);
+        job.setExternalId(externalId);
+        job.setTitle("Java Developer");
+        job.setCompany("Acme");
+        job.setLocation("Zurich");
+        job.setUser(owner);
+        return jobRepository.saveAndFlush(job);
     }
 
     @Test
-    void getJobById_shouldThrowNotFoundWhenMissing() {
-        when(jobRepository.findById(1L)).thenReturn(Optional.empty());
+    void getJobById_shouldHideAnotherUsersOffer() {
+        Job bobsOffer = createJob("external-1", bob);
 
-        assertThatThrownBy(() -> jobService.getJobById(1L))
-                .isInstanceOf(ResourceNotFoundException.class)
-                .hasMessageContaining("1");
+        assertThatThrownBy(() -> jobService.getJobById(bobsOffer.getId(), alice.getId()))
+                .isInstanceOf(ResourceNotFoundException.class);
     }
 
     @Test
-    void getJobs_shouldMapPage() {
-        Job job = new Job();
-        JobDto dto = new JobDto("job_1", "Java Developer", "TechCorp", "Paris");
-        Page<Job> page = new PageImpl<>(List.of(job));
-        PageRequest pageable = PageRequest.of(0, 10);
+    void saveJob_shouldAttachOfferToSuppliedOwner() {
+        var saved = jobService.saveJob(alice.getId(), new JobRequestDto("external-1", "Java Developer", "Acme", "Zurich"));
 
-        when(jobRepository.findAll(pageable)).thenReturn(page);
-        when(jobMapper.toDto(job)).thenReturn(dto);
-
-        Page<JobDto> result = jobService.getJobs(pageable);
-
-        assertThat(result.getContent()).containsExactly(dto);
-        verify(jobRepository).findAll(pageable);
+        assertThat(jobService.getJobById(saved.getId(), alice.getId()).getExternalId()).isEqualTo("external-1");
+        assertThatThrownBy(() -> jobService.getJobById(saved.getId(), bob.getId()))
+                .isInstanceOf(ResourceNotFoundException.class);
     }
 
     @Test
-    void saveJob_shouldSaveAndReturnDto() {
-        JobRequestDto request = new JobRequestDto("job_1", "Java Developer", "TechCorp", "Paris");
-        Job entity = new Job();
-        Job saved = new Job();
-        JobDto dto = new JobDto("job_1", "Java Developer", "TechCorp", "Paris");
+    void getJobs_shouldPaginateOnlySuppliedOwnersOffers() {
+        createJob("alice-1", alice);
+        createJob("alice-2", alice);
+        createJob("alice-3", alice);
+        createJob("bob-1", bob);
 
-        when(jobRepository.existsByExternalId("job_1")).thenReturn(false);
-        when(jobMapper.toEntity(request)).thenReturn(entity);
-        when(jobRepository.save(entity)).thenReturn(saved);
-        when(jobMapper.toDto(saved)).thenReturn(dto);
-
-        JobDto result = jobService.saveJob(request);
-
-        assertThat(result).isSameAs(dto);
-        verify(jobRepository).save(entity);
+        var page = jobService.getJobs(alice.getId(), PageRequest.of(0, 2, Sort.by("externalId")));
+        assertThat(page.getContent()).extracting(job -> job.getExternalId())
+                .containsExactly("alice-1", "alice-2");
+        assertThat(page.getTotalElements()).isEqualTo(3);
+        assertThat(page.getTotalPages()).isEqualTo(2);
     }
 
     @Test
-    void saveJob_shouldThrowConflictWhenExternalIdAlreadyExists() {
-        JobRequestDto request = new JobRequestDto("job_1", "Java Developer", "TechCorp", "Paris");
-        when(jobRepository.existsByExternalId("job_1")).thenReturn(true);
+    void deleteJob_shouldHideAndPreserveAnotherUsersOffer() {
+        Job bobsOffer = createJob("external-1", bob);
 
-        assertThatThrownBy(() -> jobService.saveJob(request))
-                .isInstanceOf(ResourceConflictException.class)
-                .hasMessageContaining("job_1");
-
-        verify(jobRepository, never()).save(any());
+        assertThatThrownBy(() -> jobService.deleteJob(bobsOffer.getId(), alice.getId()))
+                .isInstanceOf(ResourceNotFoundException.class);
+        assertThat(jobService.getJobById(bobsOffer.getId(), bob.getId()).getExternalId()).isEqualTo("external-1");
     }
 
     @Test
-    void deleteJob_shouldDeleteWhenExists() {
-        when(jobRepository.existsById(1L)).thenReturn(true);
+    void saveJob_shouldAllowSameExternalOfferForDifferentUsers() {
+        var request = new JobRequestDto("external-1", "Java Developer", "Acme", "Zurich");
+        var alicesOffer = jobService.saveJob(alice.getId(), request);
+        var bobsOffer = jobService.saveJob(bob.getId(), request);
 
-        jobService.deleteJob(1L);
-
-        verify(jobRepository).deleteById(1L);
+        assertThat(bobsOffer.getId()).isNotEqualTo(alicesOffer.getId());
+        assertThat(jobService.getJobById(bobsOffer.getId(), bob.getId()).getExternalId()).isEqualTo("external-1");
+        assertThatThrownBy(() -> jobService.getJobById(alicesOffer.getId(), bob.getId()))
+                .isInstanceOf(ResourceNotFoundException.class);
     }
 
     @Test
-    void deleteJob_shouldThrowNotFoundWhenMissing() {
-        when(jobRepository.existsById(1L)).thenReturn(false);
+    void saveJob_shouldRejectDuplicateWithinUsersCollection() {
+        var request = new JobRequestDto("external-1", "Java Developer", "Acme", "Zurich");
+        jobService.saveJob(alice.getId(), request);
 
-        assertThatThrownBy(() -> jobService.deleteJob(1L))
-                .isInstanceOf(ResourceNotFoundException.class)
-                .hasMessageContaining("1");
+        assertThatThrownBy(() -> jobService.saveJob(alice.getId(), request))
+                .isInstanceOf(ResourceConflictException.class);
+        assertThat(jobService.getJobs(alice.getId(), PageRequest.of(0, 20)).getTotalElements()).isEqualTo(1);
+    }
 
-        verify(jobRepository, never()).deleteById(any());
+    @Test
+    void deleteJob_shouldRemoveOwnersOffer() {
+        var saved = jobService.saveJob(alice.getId(), new JobRequestDto("external-1", "Java Developer", "Acme", "Zurich"));
+        jobService.deleteJob(saved.getId(), alice.getId());
+
+        assertThatThrownBy(() -> jobService.getJobById(saved.getId(), alice.getId()))
+                .isInstanceOf(ResourceNotFoundException.class);
+        assertThat(jobService.getJobs(alice.getId(), PageRequest.of(0, 20)).getTotalElements()).isZero();
+    }
+
+    @Test
+    void missingOffer_shouldBeInvisibleForReadingAndDeletion() {
+        assertThatThrownBy(() -> jobService.getJobById(Long.MAX_VALUE, alice.getId()))
+                .isInstanceOf(ResourceNotFoundException.class);
+        assertThatThrownBy(() -> jobService.deleteJob(Long.MAX_VALUE, alice.getId()))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    void getJobs_shouldReturnEmptyPersonalCollectionEvenWhenOthersHaveOffers() {
+        createJob("bob-1", bob);
+        var page = jobService.getJobs(alice.getId(), PageRequest.of(0, 20));
+        assertThat(page.getContent()).isEmpty();
+        assertThat(page.getTotalElements()).isZero();
+        assertThat(page.getTotalPages()).isZero();
     }
 }

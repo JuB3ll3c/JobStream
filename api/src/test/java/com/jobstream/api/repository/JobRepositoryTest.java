@@ -2,11 +2,18 @@ package com.jobstream.api.repository;
 
 import com.jobstream.api.config.TestContainerConfig;
 import com.jobstream.api.entity.Job;
+import com.jobstream.api.entity.User;
+import com.jobstream.api.entity.Role;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.jdbc.core.ConnectionCallback;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.datasource.init.ScriptUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.test.context.ActiveProfiles;
@@ -27,8 +34,32 @@ class JobRepositoryTest {
     @Autowired
     private JobRepository jobRepository;
 
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
+    private User alice;
+    private User bob;
+
+    @BeforeEach
+    void setUp() {
+        alice = createUser("alice@example.com");
+        bob = createUser("bob@example.com");
+    }
+
+    private User createUser(String email) {
+        User user = new User();
+        user.setEmail(email);
+        user.setPassword("unused");
+        user.setRole(Role.USER);
+        return userRepository.save(user);
+    }
+
     private Job createJob(String externalId) {
         Job job = new Job();
+        job.setUser(alice);
         job.setExternalId(externalId);
         job.setTitle("Java Developer");
         job.setCompany("TechCorp");
@@ -54,11 +85,12 @@ class JobRepositoryTest {
     }
 
     @Test
-    void existsByExternalId_shouldReturnTrueWhenPresent() {
+    void existsByExternalIdAndUserId_shouldCheckOnlyOwnersCollection() {
         jobRepository.save(createJob("job_exists"));
 
-        assertThat(jobRepository.existsByExternalId("job_exists")).isTrue();
-        assertThat(jobRepository.existsByExternalId("job_unknown")).isFalse();
+        assertThat(jobRepository.existsByExternalIdAndUserId("job_exists", alice.getId())).isTrue();
+        assertThat(jobRepository.existsByExternalIdAndUserId("job_exists", bob.getId())).isFalse();
+        assertThat(jobRepository.existsByExternalIdAndUserId("job_unknown", alice.getId())).isFalse();
     }
 
     @Test
@@ -66,6 +98,71 @@ class JobRepositoryTest {
         jobRepository.saveAndFlush(createJob("job_dup"));
 
         assertThatThrownBy(() -> jobRepository.saveAndFlush(createJob("job_dup")))
+                .isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void save_shouldAllowSameExternalIdForDifferentOwners() {
+        jobRepository.saveAndFlush(createJob("shared_offer"));
+        Job bobsOffer = createJob("shared_offer");
+        bobsOffer.setUser(bob);
+
+        Job saved = jobRepository.saveAndFlush(bobsOffer);
+
+        assertThat(jobRepository.findByIdAndUserId(saved.getId(), bob.getId())).isPresent();
+        assertThat(jobRepository.findByIdAndUserId(saved.getId(), alice.getId())).isEmpty();
+    }
+
+    @Test
+    void save_shouldRejectMissingOwner() {
+        Job orphan = createJob("orphan_offer");
+        orphan.setUser(null);
+
+        assertThatThrownBy(() -> jobRepository.saveAndFlush(orphan))
+                .isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    private void initializeSqlSchema() {
+        // This schema exists only inside this rolled-back Testcontainers transaction.
+        jdbcTemplate.execute((ConnectionCallback<Void>) connection -> {
+            try (var statement = connection.createStatement()) {
+                statement.execute("CREATE SCHEMA saved_offer_contract");
+                statement.execute("SET LOCAL search_path TO saved_offer_contract");
+            }
+            ScriptUtils.executeSqlScript(connection, new ClassPathResource("schema.sql"));
+            ScriptUtils.executeSqlScript(connection, new ClassPathResource("data.sql"));
+            return null;
+        });
+    }
+
+    @Test
+    void sqlSchema_shouldEnforceUniquenessPerUserAndLoadOwnedFixtures() {
+        initializeSqlSchema();
+        assertThat(jdbcTemplate.queryForObject("SELECT count(*) FROM job WHERE user_id IS NULL", Long.class))
+                .isZero();
+        assertThat(jdbcTemplate.queryForObject("SELECT user_id FROM job WHERE external_id = 'adzuna_007'", Long.class))
+                .isEqualTo(2L);
+        jdbcTemplate.update("INSERT INTO job (external_id, title, company, user_id) VALUES ('shared', 'Java', 'Acme', 2)");
+        jdbcTemplate.update("INSERT INTO job (external_id, title, company, user_id) VALUES ('shared', 'Java', 'Acme', 3)");
+        assertThat(jdbcTemplate.queryForObject("SELECT count(*) FROM job WHERE external_id = 'shared'", Long.class))
+                .isEqualTo(2);
+        assertThatThrownBy(() -> jdbcTemplate.update(
+                "INSERT INTO job (external_id, title, company, user_id) VALUES ('shared', 'Java', 'Acme', 2)"))
+                .isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void sqlSchema_shouldRejectOffersWithoutOwner() {
+        initializeSqlSchema();
+        assertThatThrownBy(() -> jdbcTemplate.update(
+                "INSERT INTO job (external_id, title, company) VALUES ('orphan', 'Java', 'Acme')"))
+                .isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void sqlSchema_shouldPreventDeletionFromLeavingOrphanOffers() {
+        initializeSqlSchema();
+        assertThatThrownBy(() -> jdbcTemplate.update("DELETE FROM app_user WHERE id = 2"))
                 .isInstanceOf(DataIntegrityViolationException.class);
     }
 

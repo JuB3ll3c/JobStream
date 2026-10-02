@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS job (
     version       BIGINT       NOT NULL DEFAULT 0,
     created_at    TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
     updated_at    TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
-    external_id   VARCHAR(255) NOT NULL UNIQUE,
+    external_id   VARCHAR(255) NOT NULL,
     title         VARCHAR(255) NOT NULL,
     company       VARCHAR(255) NOT NULL,
     location      VARCHAR(255),
@@ -29,10 +29,11 @@ CREATE TABLE IF NOT EXISTS job (
     posted_date   DATE,
     job_url       TEXT,
     requirements  JSONB        NOT NULL DEFAULT '[]'::jsonb,
-    user_id       BIGINT       REFERENCES app_user(id) ON DELETE SET NULL
+    user_id       BIGINT       NOT NULL,
+    CONSTRAINT fk_job_user FOREIGN KEY (user_id) REFERENCES app_user(id) ON DELETE RESTRICT,
+    CONSTRAINT uk_job_user_external_id UNIQUE (user_id, external_id)
     );
 
-CREATE UNIQUE INDEX IF NOT EXISTS idx_job_external_id ON job(external_id);
 CREATE INDEX IF NOT EXISTS idx_job_user_id ON job(user_id);
 CREATE INDEX IF NOT EXISTS idx_job_location ON job(location);
 CREATE INDEX IF NOT EXISTS idx_job_company ON job(company);

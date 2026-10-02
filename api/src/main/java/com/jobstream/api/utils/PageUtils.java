@@ -8,6 +8,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 
 import java.util.List;
+import java.util.ArrayList;
 
 public class PageUtils {
     public static PagedJobResponse toPagedResponse(Page<JobDto> page) {
@@ -28,7 +29,20 @@ public class PageUtils {
         if (sort == null || sort.isEmpty()) {
             return Sort.by(Sort.Direction.DESC, "createdAt");
         }
-        return Sort.by(sort.stream().map(PageUtils::parseSort).toList());
+        List<Sort.Order> orders = new ArrayList<>();
+        for (int i = 0; i < sort.size(); i++) {
+            String criterion = sort.get(i);
+            // Spring may split a single "property,direction" query value into two list elements.
+            if (!criterion.contains(",") && i + 1 < sort.size()) {
+                String next = sort.get(i + 1).trim();
+                if (next.equalsIgnoreCase("asc") || next.equalsIgnoreCase("desc")) {
+                    criterion += "," + next;
+                    i++;
+                }
+            }
+            orders.add(parseSort(criterion));
+        }
+        return Sort.by(orders);
     }
 
     private static Sort.Order parseSort(String sort) {

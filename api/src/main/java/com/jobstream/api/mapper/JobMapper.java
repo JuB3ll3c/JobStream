@@ -5,10 +5,12 @@ import com.jobstream.dto.JobDto;
 import com.jobstream.dto.JobRequestDto;
 import org.mapstruct.InjectionStrategy;
 import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 import org.mapstruct.MappingConstants;
 
 @Mapper(componentModel = MappingConstants.ComponentModel.SPRING, injectionStrategy = InjectionStrategy.CONSTRUCTOR)
 public interface JobMapper {
     JobDto toDto(Job job);
+    @Mapping(target = "user", ignore = true)
     Job toEntity(JobRequestDto jobRequestDto);
 }
