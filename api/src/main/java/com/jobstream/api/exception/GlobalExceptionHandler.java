@@ -11,9 +11,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -34,7 +36,22 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleExternalApiException(ExternalApiException ex) {
         log.error("External API error [{}]: {}", ex.getApiName(), ex.getMessage(), ex);
 
+        if (ex.getStatusCode() == HttpStatus.SERVICE_UNAVAILABLE.value()) {
+            return build(HttpStatus.SERVICE_UNAVAILABLE, "Service Unavailable",
+                    "Job search is temporarily unavailable");
+        }
         return build(HttpStatus.BAD_GATEWAY, "Error communicating with the external service", ex.getMessage());
+    }
+
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<ErrorResponse> handleMissingParameter(MissingServletRequestParameterException ex) {
+        return build(HttpStatus.BAD_REQUEST, "Invalid query parameters",
+                "Required parameter '" + ex.getParameterName() + "' is missing");
+    }
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ErrorResponse> handleUnknownRoute(NoResourceFoundException ex) {
+        return build(HttpStatus.NOT_FOUND, "Not Found", "Resource not found");
     }
 
     /**

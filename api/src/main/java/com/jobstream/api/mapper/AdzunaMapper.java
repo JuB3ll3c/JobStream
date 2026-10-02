@@ -2,6 +2,8 @@ package com.jobstream.api.mapper;
 
 import com.jobstream.dto.AdzunaJobSearchResponse;
 import com.jobstream.dto.JobDto;
+import com.jobstream.dto.JobOfferSearchResponse;
+import com.jobstream.api.exception.ExternalApiException;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Component;
 
@@ -14,6 +16,25 @@ import java.util.Objects;
 @Component
 @Log4j2
 public class AdzunaMapper {
+    @SuppressWarnings("unchecked")
+    public JobOfferSearchResponse toJobOfferSearchResponse(Map<String, Object> response, int page, int size) {
+        if (response == null || !(response.get("count") instanceof Number count)
+                || count.longValue() < 0 || count.doubleValue() != count.longValue()
+                || !(response.get("results") instanceof List<?> results)
+                || results.stream().anyMatch(result -> !(result instanceof Map))) {
+            throw new ExternalApiException("Adzuna", "Invalid search response", 503);
+        }
+        long total = count.longValue();
+        long totalPages = total / size + (total % size == 0 ? 0 : 1);
+        if (totalPages > Integer.MAX_VALUE) {
+            throw new ExternalApiException("Adzuna", "Invalid pagination metadata", 503);
+        }
+        List<JobDto> content = results.stream()
+                .map(result -> mapToJobDto((Map<String, Object>) result))
+                .toList();
+        return new JobOfferSearchResponse(content, page, size, total, (int) totalPages);
+    }
+
     /**
      * Maps an Adzuna job to JobDto
      */

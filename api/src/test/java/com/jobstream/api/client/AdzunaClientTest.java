@@ -49,6 +49,18 @@ class AdzunaClientTest {
     }
 
     @Test
+    void callAdzunaApi_shouldTranslateAllSearchCriteria() {
+        server.expect(requestTo(BASE_URL + "/jobs/ch/search/3"
+                        + "?app_id=testAppId&app_key=testAppKey&results_per_page=7"
+                        + "&what=Java%20Developer&content-type=application/json&where=Z%C3%BCrich"))
+                .andRespond(withSuccess("{\"count\":0,\"results\":[]}", MediaType.APPLICATION_JSON));
+
+        client.callAdzunaApi("Java Developer", 3, 7, "Zürich");
+
+        server.verify();
+    }
+
+    @Test
     void callAdzunaApi_shouldUseDefaultsWhenPageAndLimitAreNull() {
         server.expect(requestTo(BASE_URL + "/jobs/ch/search/1"
                         + "?app_id=testAppId&app_key=testAppKey&results_per_page=20"

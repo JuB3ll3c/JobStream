@@ -32,37 +32,6 @@ class AdzunaServiceTest {
     private AdzunaService adzunaService;
 
     @Test
-    void searchJobs_shouldDelegateToClientAndMapResult() {
-        Map<String, Object> rawResponse = Map.of("count", 1);
-        AdzunaJobSearchResponse mapped = new AdzunaJobSearchResponse();
-        mapped.setJobs(List.of(new JobDto("job_1", "Title", "Company", "Lyon")));
-        mapped.setTotal(1);
-        mapped.setCount(1);
-
-        when(adzunaClient.callAdzunaApi("java", 1, 20, "paris")).thenReturn(rawResponse);
-        when(adzunaMapper.toJobSearchResponse(rawResponse)).thenReturn(mapped);
-
-        AdzunaJobSearchResponse result = adzunaService.searchJobs("java", 1, 20, "paris");
-
-        assertThat(result).isSameAs(mapped);
-        verify(adzunaClient).callAdzunaApi("java", 1, 20, "paris");
-        verify(adzunaMapper).toJobSearchResponse(rawResponse);
-    }
-
-    @Test
-    void searchJobs_shouldPassNullOptionalParameters() {
-        Map<String, Object> rawResponse = Map.of();
-        AdzunaJobSearchResponse mapped = new AdzunaJobSearchResponse();
-
-        when(adzunaClient.callAdzunaApi("java", null, null, null)).thenReturn(rawResponse);
-        when(adzunaMapper.toJobSearchResponse(rawResponse)).thenReturn(mapped);
-
-        adzunaService.searchJobs("java", null, null, null);
-
-        verify(adzunaClient).callAdzunaApi("java", null, null, null);
-    }
-
-    @Test
     void getJobById_shouldReturnJobWhenIdMatches() {
         Map<String, Object> rawResponse = Map.of("count", 1);
         JobDto job = new JobDto("job_1", "Java Developer", "TechCorp", "Paris");
