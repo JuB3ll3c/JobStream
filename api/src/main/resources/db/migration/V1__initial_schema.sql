@@ -1,8 +1,8 @@
-CREATE TABLE IF NOT EXISTS app_user (
+CREATE TABLE app_user (
     id          BIGSERIAL PRIMARY KEY,
     version     BIGINT       NOT NULL DEFAULT 0,
-    created_at  TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
-    updated_at  TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    created_at  TIMESTAMP    NOT NULL DEFAULT LOCALTIMESTAMP,
+    updated_at  TIMESTAMP    NOT NULL DEFAULT LOCALTIMESTAMP,
     first_name  VARCHAR(255),
     last_name   VARCHAR(255),
     email       VARCHAR(255) NOT NULL UNIQUE,
@@ -13,11 +13,11 @@ CREATE TABLE IF NOT EXISTS app_user (
 -- ------------------------------------------------------------
 -- Table: job
 -- ------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS job (
+CREATE TABLE job (
     id            BIGSERIAL PRIMARY KEY,
     version       BIGINT       NOT NULL DEFAULT 0,
-    created_at    TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
-    updated_at    TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    created_at    TIMESTAMP    NOT NULL DEFAULT LOCALTIMESTAMP,
+    updated_at    TIMESTAMP    NOT NULL DEFAULT LOCALTIMESTAMP,
     external_id   VARCHAR(255) NOT NULL,
     title         VARCHAR(255) NOT NULL,
     company       VARCHAR(255) NOT NULL,
@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS job (
     description   TEXT,
     salary_min    INTEGER CHECK (salary_min >= 0),
     salary_max    INTEGER CHECK (salary_max >= 0),
-    contract_type VARCHAR(50),
+    contract_type VARCHAR(255),
     posted_date   DATE,
     job_url       TEXT,
     requirements  JSONB        NOT NULL DEFAULT '[]'::jsonb,
@@ -34,6 +34,6 @@ CREATE TABLE IF NOT EXISTS job (
     CONSTRAINT uk_job_user_external_id UNIQUE (user_id, external_id)
     );
 
-CREATE INDEX IF NOT EXISTS idx_job_user_id ON job(user_id);
-CREATE INDEX IF NOT EXISTS idx_job_location ON job(location);
-CREATE INDEX IF NOT EXISTS idx_job_company ON job(company);
+CREATE INDEX idx_job_user_id ON job(user_id);
+CREATE INDEX idx_job_location ON job(location);
+CREATE INDEX idx_job_company ON job(company);

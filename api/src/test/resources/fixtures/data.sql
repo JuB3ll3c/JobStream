@@ -1,3 +1,4 @@
+-- Fixtures loaded explicitly in isolated test schemas, never at application startup.
 INSERT INTO app_user (first_name, last_name, email, password, role, created_at, updated_at) VALUES
 ('Admin', 'JobStream', 'admin@jobstream.com', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'ADMIN', NOW(), NOW()),
 ('Alice', 'Dupont', 'alice@test.com',        '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'USER',  NOW(), NOW()),

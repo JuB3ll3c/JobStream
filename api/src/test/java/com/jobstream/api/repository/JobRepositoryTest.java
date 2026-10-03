@@ -4,6 +4,7 @@ import com.jobstream.api.config.TestContainerConfig;
 import com.jobstream.api.entity.Job;
 import com.jobstream.api.entity.User;
 import com.jobstream.api.entity.Role;
+import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,6 +41,9 @@ class JobRepositoryTest {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
+    @Autowired
+    private EntityManager entityManager;
+
     private User alice;
     private User bob;
 
@@ -72,6 +76,35 @@ class JobRepositoryTest {
         job.setJobUrl("https://example.com/job/" + externalId);
         job.setRequirements(List.of("Java 17", "Spring Boot"));
         return job;
+    }
+
+    @Test
+    void save_shouldRoundTripLongDescriptionAndUrl() {
+        Job job = createJob("long_offer");
+        String description = "Detailed job description. ".repeat(200);
+        String url = "https://example.com/jobs?tracking=" + "a".repeat(1000);
+        job.setDescription(description);
+        job.setJobUrl(url);
+
+        Long id = jobRepository.saveAndFlush(job).getId();
+        entityManager.clear();
+
+        Job loaded = jobRepository.findById(id).orElseThrow();
+        assertThat(loaded.getDescription()).isEqualTo(description);
+        assertThat(loaded.getJobUrl()).isEqualTo(url);
+    }
+
+    @Test
+    void save_shouldRoundTripContractTypeOf255Characters() {
+        Job job = createJob("long_contract_type");
+        String contractType = "C".repeat(255);
+        job.setContractType(contractType);
+
+        Long id = jobRepository.saveAndFlush(job).getId();
+        entityManager.clear();
+
+        Job loaded = jobRepository.findById(id).orElseThrow();
+        assertThat(loaded.getContractType()).isEqualTo(contractType);
     }
 
     @Test
@@ -129,8 +162,8 @@ class JobRepositoryTest {
                 statement.execute("CREATE SCHEMA saved_offer_contract");
                 statement.execute("SET LOCAL search_path TO saved_offer_contract");
             }
-            ScriptUtils.executeSqlScript(connection, new ClassPathResource("schema.sql"));
-            ScriptUtils.executeSqlScript(connection, new ClassPathResource("data.sql"));
+            ScriptUtils.executeSqlScript(connection, new ClassPathResource("db/migration/V1__initial_schema.sql"));
+            ScriptUtils.executeSqlScript(connection, new ClassPathResource("fixtures/data.sql"));
             return null;
         });
     }

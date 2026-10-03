@@ -3,7 +3,7 @@ spring:
     name: api
   jpa:
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: validate
 
 # Adzuna API configuration
 adzuna:

@@ -26,6 +26,7 @@ public class Job extends BaseEntity{
 
     private String location;
 
+    @Column(columnDefinition = "text")
     private String description;
 
     private Integer salaryMin;
@@ -36,6 +37,7 @@ public class Job extends BaseEntity{
 
     private LocalDate postedDate;
 
+    @Column(columnDefinition = "text")
     private String jobUrl;
 
     @JdbcTypeCode(SqlTypes.JSON)
