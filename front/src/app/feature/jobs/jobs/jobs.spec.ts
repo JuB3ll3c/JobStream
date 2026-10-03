@@ -64,6 +64,30 @@ describe('Jobs search', () => {
     ];
   }
 
+  it('cancels pending saves when leaving the page and starts fresh when returning', async () => {
+    await showOffers();
+    saveButton().click();
+    const saving = http.expectOne('/api/jobs');
+    await harness.navigateByUrl('/login', Login);
+    expect(saving.cancelled).toBe(true);
+    await showOffers();
+    expect(saveButton().disabled).toBe(false);
+    expect(saveButton().getAttribute('aria-label')).toBe('Sauvegarder Java Engineer');
+  });
+
+  it('does not keep a previous page user’s saved state in a new page instance', async () => {
+    sessionStorage.setItem('access_token', 'alice-token');
+    await showOffers();
+    saveButton().click();
+    http.expectOne('/api/jobs').flush({ ...offer, id: 1 });
+    await harness.navigateByUrl('/login', Login);
+    sessionStorage.setItem('access_token', 'bob-token');
+    await showOffers();
+    expect(saveButton().disabled).toBe(false);
+    expect(saveButton().getAttribute('aria-pressed')).toBe('false');
+    sessionStorage.clear();
+  });
+
   it('opens the selected offer without refetching and keeps the search URL context', async () => {
     await harness.navigateByUrl('/jobs?title=Java&location=Zurich&page=2&size=10', Jobs);
     http
