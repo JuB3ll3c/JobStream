@@ -19,6 +19,9 @@ header p {
 
 .search-form,
 .offer-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.75rem 1rem;
   padding: 1.5rem;
   border: 1px solid var(--jobstream-color-border);
   border-radius: var(--jobstream-radius-medium);
@@ -97,6 +100,49 @@ input[aria-invalid='true'] {
 .offer-card h2 {
   margin-top: 0;
   font-size: 1.25rem;
+}
+
+.offer-save {
+  display: contents;
+}
+
+.offer-save p {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+
+.bookmark-button {
+  display: grid;
+  place-items: center;
+  grid-column: 2;
+  grid-row: 1;
+  align-self: start;
+  width: 2.875rem;
+  padding: 0.625rem;
+  border-color: transparent;
+  background: transparent;
+  color: var(--jobstream-color-primary);
+}
+
+.bookmark-button:hover:not(:disabled) {
+  background: var(--jobstream-color-background);
+}
+
+.bookmark-button svg {
+  width: 1.5rem;
+  height: 1.5rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.75;
+  stroke-linejoin: round;
+}
+
+.bookmark-button[aria-pressed='true'] svg {
+  fill: currentColor;
+}
+
+.offer-save [role='status'] {
+  color: var(--jobstream-color-accent);
 }
 
 nav {

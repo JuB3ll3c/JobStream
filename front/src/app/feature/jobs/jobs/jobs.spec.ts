@@ -3,7 +3,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
-import { BASE_PATH } from '../../../generated';
+import { BASE_PATH, JobDto } from '../../../generated';
 import { Jobs } from './jobs';
 import { Login } from '../../auth/login/login';
 import { authInterceptor } from '../../../core/service/auth/auth-interceptor';
@@ -27,6 +27,175 @@ describe('Jobs search', () => {
     harness = await RouterTestingHarness.create();
   });
   afterEach(() => http.verify());
+
+  const offer: JobDto = {
+    externalId: 'ext-1',
+    title: 'Java Engineer',
+    company: 'Acme',
+    location: 'Zurich',
+    description: 'An excerpt',
+    salaryMin: 80000,
+    salaryMax: 100000,
+    contractType: 'permanent',
+    postedDate: '2026-10-01T00:00:00Z',
+    jobUrl: 'https://example.com/jobs/1',
+    requirements: ['Java'],
+  };
+
+  async function showOffers(content: JobDto[] = [offer]): Promise<void> {
+    await harness.navigateByUrl('/jobs?title=Java', Jobs);
+    http
+      .expectOne((req) => req.url === '/api/job-offers')
+      .flush({
+        content,
+        page: 1,
+        size: 20,
+        totalElements: content.length,
+        totalPages: 1,
+      });
+    harness.detectChanges();
+  }
+
+  function saveButton(index = 0): HTMLButtonElement {
+    return harness.routeNativeElement!.querySelectorAll<HTMLButtonElement>('.offer-card button')[
+      index
+    ];
+  }
+
+  it('uses an accessible bookmark icon that fills when saved', async () => {
+    await showOffers();
+    expect(saveButton().getAttribute('aria-label')).toBe('Sauvegarder Java Engineer');
+    expect(saveButton().getAttribute('aria-pressed')).toBe('false');
+    expect(saveButton().querySelector('svg[aria-hidden="true"]')).not.toBeNull();
+    expect(saveButton().textContent!.trim()).toBe('');
+    saveButton().click();
+    harness.detectChanges();
+    expect(saveButton().getAttribute('aria-busy')).toBe('true');
+    http.expectOne('/api/jobs').flush({ ...offer, id: 1 }, { status: 201, statusText: 'Created' });
+    harness.detectChanges();
+    expect(saveButton().getAttribute('aria-pressed')).toBe('true');
+    expect(saveButton().getAttribute('aria-label')).toBe('Sauvegardée : Java Engineer');
+    expect(saveButton().disabled).toBe(true);
+  });
+
+  it('redirects to login when the session expires during a save', async () => {
+    await showOffers();
+    sessionStorage.setItem('access_token', 'expired-token');
+    saveButton().click();
+    http.expectOne('/api/jobs').flush({}, { status: 401, statusText: 'Unauthorized' });
+    await harness.fixture.whenStable();
+    harness.detectChanges();
+    expect(TestBed.inject(Router).url).toBe('/login');
+    expect(sessionStorage.getItem('access_token')).toBeNull();
+    expect(harness.routeNativeElement!.querySelector('#email')).not.toBeNull();
+    expect(harness.routeNativeElement!.textContent).not.toContain('Impossible de sauvegarder');
+  });
+
+  it('keeps save state associated with the external offer across searches', async () => {
+    await showOffers();
+    saveButton().click();
+    const saving = http.expectOne('/api/jobs');
+    await harness.navigateByUrl('/jobs?title=Engineer', Jobs);
+    http
+      .expectOne((req) => req.url === '/api/job-offers')
+      .flush({
+        content: [{ ...offer, externalId: 'ext-2' }, offer],
+        page: 1,
+        size: 20,
+        totalElements: 2,
+        totalPages: 1,
+      });
+    harness.detectChanges();
+    expect(saveButton().disabled).toBe(false);
+    expect(saveButton(1).disabled).toBe(true);
+    expect(saveButton(1).getAttribute('aria-label')).toContain('Sauvegarde en cours');
+    saving.flush({ ...offer, id: 1 }, { status: 201, statusText: 'Created' });
+    harness.detectChanges();
+    expect(saveButton(1).getAttribute('aria-label')).toContain('Sauvegardée');
+    expect(saveButton().getAttribute('aria-label')).toContain('Sauvegarder');
+  });
+
+  it('prevents duplicate submissions while allowing another offer to be saved', async () => {
+    await showOffers([offer, { ...offer, externalId: 'ext-2' }]);
+    saveButton().click();
+    saveButton().click();
+    harness.detectChanges();
+    expect(saveButton().disabled).toBe(true);
+    expect(saveButton(1).disabled).toBe(false);
+    expect(
+      harness.routeNativeElement!.querySelector('.offer-card [role="status"]')!.textContent,
+    ).toContain('Sauvegarde en cours');
+    saveButton(1).click();
+    const requests = http.match('/api/jobs');
+    expect(requests.map((request) => request.request.body.externalId)).toEqual(['ext-1', 'ext-2']);
+    requests[1].flush(
+      { ...offer, externalId: 'ext-2', id: 2 },
+      { status: 201, statusText: 'Created' },
+    );
+    harness.detectChanges();
+    expect(saveButton(1).getAttribute('aria-label')).toContain('Sauvegardée');
+    expect(saveButton().getAttribute('aria-label')).toContain('Sauvegarde en cours');
+    requests[0].flush({ ...offer, id: 1 }, { status: 201, statusText: 'Created' });
+    harness.detectChanges();
+    expect(saveButton().getAttribute('aria-label')).toContain('Sauvegardée');
+  });
+
+  it('shows a technical error only on the failed offer and allows retrying', async () => {
+    await showOffers([offer, { ...offer, externalId: 'ext-2', title: 'Another offer' }]);
+    saveButton().click();
+    http
+      .expectOne('/api/jobs')
+      .flush({ message: 'internal details' }, { status: 500, statusText: 'Error' });
+    harness.detectChanges();
+    const cards = harness.routeNativeElement!.querySelectorAll('.offer-card');
+    expect(cards[0].querySelector('[role="alert"]')!.textContent).toContain(
+      'Impossible de sauvegarder',
+    );
+    expect(cards[0].textContent).not.toContain('internal details');
+    expect(cards[1].querySelector('[role="alert"]')).toBeNull();
+    expect(saveButton().disabled).toBe(false);
+    saveButton().click();
+    harness.detectChanges();
+    expect(cards[0].querySelector('[role="alert"]')).toBeNull();
+    http.expectOne('/api/jobs').flush({ ...offer, id: 1 }, { status: 201, statusText: 'Created' });
+    harness.detectChanges();
+    expect(saveButton().getAttribute('aria-label')).toContain('Sauvegardée');
+  });
+
+  it('treats a duplicate as already saved rather than a technical error', async () => {
+    await showOffers();
+    saveButton().click();
+    http.expectOne('/api/jobs').flush({}, { status: 409, statusText: 'Conflict' });
+    harness.detectChanges();
+    expect(saveButton().getAttribute('aria-label')).toContain('Déjà sauvegardée');
+    expect(saveButton().disabled).toBe(true);
+    expect(harness.routeNativeElement!.querySelector('.offer-card [role="alert"]')).toBeNull();
+  });
+
+  it('saves an offer without sending ownership or persistence fields', async () => {
+    await showOffers([{ ...offer, id: 99, createdAt: '2026-10-02T00:00:00Z' }]);
+    expect(saveButton().getAttribute('aria-label')).toContain('Sauvegarder');
+    saveButton().click();
+    const request = http.expectOne('/api/jobs');
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual({
+      externalId: 'ext-1',
+      title: 'Java Engineer',
+      company: 'Acme',
+      location: 'Zurich',
+      description: 'An excerpt',
+      salaryMin: 80000,
+      salaryMax: 100000,
+      contractType: 'permanent',
+      postedDate: '2026-10-01T00:00:00Z',
+      jobUrl: 'https://example.com/jobs/1',
+      requirements: ['Java'],
+    });
+    request.flush({ ...offer, id: 1 }, { status: 201, statusText: 'Created' });
+    harness.detectChanges();
+    expect(saveButton().getAttribute('aria-label')).toContain('Sauvegardée');
+    expect(saveButton().disabled).toBe(true);
+  });
 
   it('reports blank keywords supplied in the URL as invalid criteria', async () => {
     await harness.navigateByUrl('/jobs?title=%20%20', Jobs);

@@ -45,11 +45,58 @@
       }
       @for (offer of response.content; track $index) {
         <article class="offer-card">
-          <h2>{{ offer.title }}</h2>
-          <p>{{ offer.company }} · {{ offer.location }}</p>
-          @if (offer.description) {
-            <p>{{ offer.description }}</p>
-          }
+          @let saveState = saveStates().get(offer.externalId);
+          <div class="offer-content">
+            <h2>{{ offer.title }}</h2>
+            <p>{{ offer.company }} · {{ offer.location }}</p>
+            @if (offer.description) {
+              <p>{{ offer.description }}</p>
+            }
+          </div>
+          <div class="offer-save">
+            <button
+              type="button"
+              class="bookmark-button"
+              [attr.aria-label]="
+                saveState === 'saved'
+                  ? 'Sauvegardée : ' + offer.title
+                  : saveState === 'duplicate'
+                    ? 'Déjà sauvegardée : ' + offer.title
+                    : saveState === 'saving'
+                      ? 'Sauvegarde en cours : ' + offer.title
+                      : 'Sauvegarder ' + offer.title
+              "
+              [attr.title]="
+                saveState === 'saved'
+                  ? 'Sauvegardée'
+                  : saveState === 'duplicate'
+                    ? 'Déjà sauvegardée'
+                    : saveState === 'saving'
+                      ? 'Sauvegarde en cours'
+                      : 'Sauvegarder'
+              "
+              [attr.aria-pressed]="saveState === 'saved' || saveState === 'duplicate'"
+              [attr.aria-busy]="saveState === 'saving'"
+              [disabled]="
+                saveStates().has(offer.externalId) && saveStates().get(offer.externalId) !== 'error'
+              "
+              (click)="save(offer)"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M6 3h12v18l-6-4-6 4V3Z" />
+              </svg>
+            </button>
+            @if (saveStates().get(offer.externalId) === 'saving') {
+              <p role="status">Sauvegarde en cours…</p>
+            } @else if (saveStates().get(offer.externalId) === 'saved') {
+              <p role="status">Offre sauvegardée.</p>
+            } @else if (saveStates().get(offer.externalId) === 'duplicate') {
+              <p role="status">Cette offre est déjà sauvegardée.</p>
+            }
+            @if (saveStates().get(offer.externalId) === 'error') {
+              <p role="alert">Impossible de sauvegarder cette offre. Réessayez.</p>
+            }
+          </div>
         </article>
       }
       @if (response.totalPages > 0) {

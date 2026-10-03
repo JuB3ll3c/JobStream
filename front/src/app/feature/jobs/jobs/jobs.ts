@@ -1,10 +1,18 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, DestroyRef, inject, signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { EMPTY, Subject, catchError, map, merge, switchMap, tap } from 'rxjs';
-import { JobOfferSearchResponse, JobOfferService } from '../../../generated';
+import {
+  JobDto,
+  JobOfferSearchResponse,
+  JobOfferService,
+  JobRequestDto,
+  JobService,
+} from '../../../generated';
+
+type SaveState = 'saving' | 'saved' | 'duplicate' | 'error';
 
 @Component({
   selector: 'app-jobs',
@@ -17,6 +25,9 @@ export class Jobs {
   private readonly api = inject(JobOfferService);
   private readonly router = inject(Router);
   private readonly retry = new Subject<void>();
+  private readonly jobsApi = inject(JobService);
+  private readonly destroyRef = inject(DestroyRef);
+  readonly saveStates = signal(new Map<string, SaveState>());
   readonly form = new FormGroup({
     title: new FormControl('', {
       nonNullable: true,
@@ -108,5 +119,37 @@ export class Jobs {
       queryParams: { page },
       queryParamsHandling: 'merge',
     });
+  }
+
+  save(offer: JobDto): void {
+    const state = this.saveStates().get(offer.externalId);
+    if (state && state !== 'error') return;
+    this.setSaveState(offer.externalId, 'saving');
+    const request: JobRequestDto = {
+      externalId: offer.externalId,
+      title: offer.title,
+      company: offer.company,
+      location: offer.location,
+      description: offer.description,
+      salaryMin: offer.salaryMin,
+      salaryMax: offer.salaryMax,
+      contractType: offer.contractType,
+      postedDate: offer.postedDate,
+      jobUrl: offer.jobUrl,
+      requirements: offer.requirements,
+    };
+    this.jobsApi
+      .saveJob({ jobRequestDto: request })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => this.setSaveState(offer.externalId, 'saved'),
+        error: (error: HttpErrorResponse) => {
+          this.setSaveState(offer.externalId, error.status === 409 ? 'duplicate' : 'error');
+        },
+      });
+  }
+
+  private setSaveState(externalId: string, state: SaveState): void {
+    this.saveStates.update((states) => new Map(states).set(externalId, state));
   }
 }
