@@ -1,1 +1,77 @@
-<p>jobs works!</p>
+<section class="jobs-page" aria-labelledby="jobs-heading">
+  <header>
+    <h1 id="jobs-heading">Rechercher des offres</h1>
+    <p>
+      Explorez les offres par poste ou mots-clés et par localité. Les correspondances peuvent être
+      approximatives.
+    </p>
+  </header>
+  <form class="search-form" [formGroup]="form" (ngSubmit)="search()">
+    <div class="search-field">
+      <label for="title">Poste ou mots-clés</label>
+      <input
+        id="title"
+        formControlName="title"
+        [attr.aria-invalid]="validationError()"
+        [attr.aria-describedby]="validationError() ? 'title-error' : null"
+      />
+      @if (validationError()) {
+        <p id="title-error" role="alert">Saisissez un poste ou des mots-clés.</p>
+      }
+    </div>
+    <div class="search-field">
+      <label for="location">Localité</label>
+      <input id="location" formControlName="location" />
+    </div>
+    <button type="submit" [disabled]="loading()">Rechercher</button>
+  </form>
+  <section class="search-results" aria-label="Résultats de recherche" [attr.aria-busy]="loading()">
+    @if (loading()) {
+      <p role="status">Chargement des offres…</p>
+    } @else if (error()) {
+      <p role="alert">{{ error() }}</p>
+    } @else if (!results()) {
+      <p>Lancez une recherche par poste ou mots-clés.</p>
+    }
+    @if (results()?.content?.length === 0) {
+      <p role="status">Aucune offre trouvée. Essayez d’autres mots-clés ou une autre localité.</p>
+    }
+    @if (results(); as response) {
+      @if (response.totalPages > 0) {
+        <p role="status">
+          {{ response.totalElements }} offres — Page {{ response.page }} sur
+          {{ response.totalPages }}
+        </p>
+      }
+      @for (offer of response.content; track $index) {
+        <article class="offer-card">
+          <h2>{{ offer.title }}</h2>
+          <p>{{ offer.company }} · {{ offer.location }}</p>
+          @if (offer.description) {
+            <p>{{ offer.description }}</p>
+          }
+        </article>
+      }
+      @if (response.totalPages > 0) {
+        <nav aria-label="Pagination des résultats">
+          <button
+            type="button"
+            aria-label="Page précédente"
+            [disabled]="response.page <= 1"
+            (click)="changePage(response.page - 1)"
+          >
+            Précédente
+          </button>
+          <button
+            type="button"
+            aria-label="Page suivante"
+            [disabled]="response.page >= response.totalPages"
+            (click)="changePage(response.page + 1)"
+          >
+            Suivante
+          </button>
+        </nav>
+      }
+    }
+  </section>
+</section>
