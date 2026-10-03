@@ -22,27 +22,23 @@
           type="button"
           class="bookmark-button"
           [attr.aria-label]="
-            saveState === 'saved'
-              ? 'Sauvegardée : ' + job.title
-              : saveState === 'duplicate'
-                ? 'Déjà sauvegardée : ' + job.title
+            saveState === 'removing'
+              ? 'Retrait en cours : ' + job.title
+              : saveState === 'saved' || saveState === 'duplicate' || saveState === 'remove-error'
+                ? 'Retirer des offres sauvegardées : ' + job.title
                 : saveState === 'saving'
                   ? 'Sauvegarde en cours : ' + job.title
                   : 'Sauvegarder ' + job.title
           "
-          [attr.title]="
-            saveState === 'saved'
-              ? 'Sauvegardée'
-              : saveState === 'duplicate'
-                ? 'Déjà sauvegardée'
-                : saveState === 'saving'
-                  ? 'Sauvegarde en cours'
-                  : 'Sauvegarder'
+          [attr.aria-pressed]="
+            saveState === 'saved' ||
+            saveState === 'duplicate' ||
+            saveState === 'removing' ||
+            saveState === 'remove-error'
           "
-          [attr.aria-pressed]="saveState === 'saved' || saveState === 'duplicate'"
-          [attr.aria-busy]="saveState === 'saving'"
-          [disabled]="!!saveState && saveState !== 'error'"
-          (click)="save(job)"
+          [attr.aria-busy]="saveState === 'saving' || saveState === 'removing'"
+          [disabled]="saveState === 'saving' || saveState === 'removing'"
+          (click)="toggle(job)"
         >
           <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
             <path d="M6 3h12v18l-6-4-6 4V3Z" />
@@ -50,8 +46,8 @@
         </button>
       </header>
       <div class="save-feedback">
-        @if (saveState === 'saving') {
-          <p role="status">Sauvegarde en cours…</p>
+        @if (saveState === 'remove-error') {
+          <p role="alert">Impossible de retirer cette offre. Réessayez.</p>
         } @else if (saveState === 'error') {
           <p role="alert">Impossible de sauvegarder cette offre. Réessayez.</p>
         }

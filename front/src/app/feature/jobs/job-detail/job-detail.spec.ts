@@ -64,17 +64,78 @@ describe('External job detail', () => {
     return harness.routeNativeElement!.querySelector<HTMLButtonElement>('.bookmark-button')!;
   }
 
+  it('removes a saved offer with another bookmark click', async () => {
+    await showDetail();
+    bookmark().click();
+    http.expectOne('/api/jobs').flush({ ...offer, id: 1 });
+    harness.detectChanges();
+    bookmark().click();
+    const removal = http.expectOne('/api/jobs/1');
+    harness.detectChanges();
+    expect(bookmark().disabled).toBe(true);
+    expect(bookmark().getAttribute('aria-pressed')).toBe('true');
+    expect(harness.routeNativeElement!.querySelector('.save-feedback [role="status"]')).toBeNull();
+    removal.flush(null, { status: 204, statusText: 'No Content' });
+    harness.detectChanges();
+    expect(bookmark().getAttribute('aria-pressed')).toBe('false');
+    expect(bookmark().disabled).toBe(false);
+  });
+
+  it('keeps a failed removal bookmarked and allows retrying', async () => {
+    await showDetail();
+    bookmark().click();
+    http.expectOne('/api/jobs').flush({ ...offer, id: 1 });
+    harness.detectChanges();
+    bookmark().click();
+    http
+      .expectOne('/api/jobs/1')
+      .flush({ message: 'internal details' }, { status: 500, statusText: 'Error' });
+    harness.detectChanges();
+    expect(bookmark().getAttribute('aria-pressed')).toBe('true');
+    expect(bookmark().getAttribute('aria-label')).toContain('Retirer');
+    expect(bookmark().disabled).toBe(false);
+    expect(harness.routeNativeElement!.querySelector('[role="alert"]')!.textContent).toContain(
+      'Impossible de retirer',
+    );
+    expect(harness.routeNativeElement!.textContent).not.toContain('internal details');
+    bookmark().click();
+    harness.detectChanges();
+    expect(harness.routeNativeElement!.querySelector('[role="alert"]')).toBeNull();
+    http.expectOne('/api/jobs/1').flush(null, { status: 204, statusText: 'No Content' });
+  });
+
+  it('redirects to login when the session expires during removal', async () => {
+    await showDetail();
+    bookmark().click();
+    http.expectOne('/api/jobs').flush({ ...offer, id: 1 });
+    harness.detectChanges();
+    sessionStorage.setItem('access_token', 'expired-token');
+    bookmark().click();
+    http.expectOne('/api/jobs/1').flush({}, { status: 401, statusText: 'Unauthorized' });
+    await harness.fixture.whenStable();
+    harness.detectChanges();
+    expect(TestBed.inject(Router).url).toBe('/login');
+    expect(sessionStorage.getItem('access_token')).toBeNull();
+    expect(harness.routeNativeElement!.textContent).not.toContain('Impossible de retirer');
+  });
+
   it('marks an existing saved offer as already saved without a technical error', async () => {
     await showDetail();
     bookmark().click();
     http.expectOne('/api/jobs').flush({}, { status: 409, statusText: 'Conflict' });
     harness.detectChanges();
-    expect(bookmark().getAttribute('aria-label')).toBe('Déjà sauvegardée : Java Engineer');
+    expect(bookmark().getAttribute('aria-label')).toBe(
+      'Retirer des offres sauvegardées : Java Engineer',
+    );
     expect(bookmark().getAttribute('aria-pressed')).toBe('true');
-    expect(bookmark().disabled).toBe(true);
+    expect(bookmark().disabled).toBe(false);
     expect(harness.routeNativeElement!.querySelector('.save-feedback [role="status"]')).toBeNull();
     expect(harness.routeNativeElement!.querySelector('.save-feedback [role="alert"]')).toBeNull();
     bookmark().click();
+    http.expectOne('/api/jobs/by-external-id/ext-1').flush({ ...offer, id: 42 });
+    http.expectOne('/api/jobs/42').flush(null, { status: 204, statusText: 'No Content' });
+    harness.detectChanges();
+    expect(bookmark().getAttribute('aria-pressed')).toBe('false');
     http.expectNone('/api/jobs');
   });
 
@@ -106,12 +167,12 @@ describe('External job detail', () => {
     const request = http.expectOne('/api/jobs');
     harness.detectChanges();
     expect(bookmark().disabled).toBe(true);
-    expect(
-      harness.routeNativeElement!.querySelector('.save-feedback [role="status"]')!.textContent,
-    ).toContain('Sauvegarde en cours');
+    expect(harness.routeNativeElement!.querySelector('.save-feedback [role="status"]')).toBeNull();
     request.flush({ ...offer, id: 1 });
     harness.detectChanges();
     bookmark().click();
+    bookmark().click();
+    http.expectOne('/api/jobs/1').flush(null, { status: 204, statusText: 'No Content' });
     http.expectNone('/api/jobs');
   });
 
@@ -187,8 +248,10 @@ describe('External job detail', () => {
     request.flush({ ...offer, id: 1 }, { status: 201, statusText: 'Created' });
     harness.detectChanges();
     expect(bookmark().getAttribute('aria-pressed')).toBe('true');
-    expect(bookmark().getAttribute('aria-label')).toBe('Sauvegardée : Java Engineer');
-    expect(bookmark().disabled).toBe(true);
+    expect(bookmark().getAttribute('aria-label')).toBe(
+      'Retirer des offres sauvegardées : Java Engineer',
+    );
+    expect(bookmark().disabled).toBe(false);
     expect(harness.routeNativeElement!.querySelector('.save-feedback [role="status"]')).toBeNull();
   });
 

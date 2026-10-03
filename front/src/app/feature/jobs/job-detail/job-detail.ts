@@ -38,8 +38,8 @@ export class JobDetail {
     return this.route.snapshot.queryParams;
   }
 
-  save(offer: JobDto): void {
-    this.jobSaving.save(offer);
+  toggle(offer: JobDto): void {
+    this.jobSaving.toggle(offer);
   }
 
   constructor() {

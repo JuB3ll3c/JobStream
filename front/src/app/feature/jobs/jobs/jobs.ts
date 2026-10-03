@@ -118,7 +118,7 @@ export class Jobs {
     });
   }
 
-  save(offer: JobDto): void {
-    this.jobSaving.save(offer);
+  toggle(offer: JobDto): void {
+    this.jobSaving.toggle(offer);
   }
 }

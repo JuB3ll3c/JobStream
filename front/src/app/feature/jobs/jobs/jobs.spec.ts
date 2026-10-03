@@ -124,8 +124,55 @@ describe('Jobs search', () => {
     http.expectOne('/api/jobs').flush({ ...offer, id: 1 }, { status: 201, statusText: 'Created' });
     harness.detectChanges();
     expect(saveButton().getAttribute('aria-pressed')).toBe('true');
-    expect(saveButton().getAttribute('aria-label')).toBe('Sauvegardée : Java Engineer');
+    expect(saveButton().getAttribute('aria-label')).toBe(
+      'Retirer des offres sauvegardées : Java Engineer',
+    );
+    expect(saveButton().disabled).toBe(false);
+  });
+
+  it('removes a saved offer with another bookmark click', async () => {
+    await showOffers();
+    saveButton().click();
+    http.expectOne('/api/jobs').flush({ ...offer, id: 1 });
+    harness.detectChanges();
+    saveButton().click();
+    const removal = http.expectOne('/api/jobs/1');
+    harness.detectChanges();
     expect(saveButton().disabled).toBe(true);
+    expect(saveButton().getAttribute('aria-pressed')).toBe('true');
+    expect(saveButton().getAttribute('aria-busy')).toBe('true');
+    expect(harness.routeNativeElement!.querySelector('.offer-card [role="status"]')).toBeNull();
+    removal.flush(null, { status: 204, statusText: 'No Content' });
+    harness.detectChanges();
+    expect(saveButton().getAttribute('aria-pressed')).toBe('false');
+    expect(saveButton().getAttribute('aria-label')).toBe('Sauvegarder Java Engineer');
+    expect(saveButton().disabled).toBe(false);
+  });
+
+  it('keeps a failed removal bookmarked and allows retrying without blocking other offers', async () => {
+    await showOffers([offer, { ...offer, externalId: 'ext-2' }]);
+    saveButton().click();
+    http.expectOne('/api/jobs').flush({ ...offer, id: 1 });
+    harness.detectChanges();
+    saveButton().click();
+    http
+      .expectOne('/api/jobs/1')
+      .flush({ message: 'internal details' }, { status: 500, statusText: 'Error' });
+    harness.detectChanges();
+    expect(saveButton().getAttribute('aria-pressed')).toBe('true');
+    expect(saveButton().getAttribute('aria-label')).toContain('Retirer');
+    expect(saveButton().disabled).toBe(false);
+    expect(saveButton(1).disabled).toBe(false);
+    const cards = harness.routeNativeElement!.querySelectorAll('.offer-card');
+    expect(cards[0].querySelector('[role="alert"]')!.textContent).toContain(
+      'Impossible de retirer',
+    );
+    expect(cards[0].textContent).not.toContain('internal details');
+    expect(cards[1].querySelector('[role="alert"]')).toBeNull();
+    saveButton().click();
+    harness.detectChanges();
+    expect(cards[0].querySelector('[role="alert"]')).toBeNull();
+    http.expectOne('/api/jobs/1').flush(null, { status: 204, statusText: 'No Content' });
   });
 
   it('redirects to login when the session expires during a save', async () => {
@@ -161,7 +208,7 @@ describe('Jobs search', () => {
     expect(saveButton(1).getAttribute('aria-label')).toContain('Sauvegarde en cours');
     saving.flush({ ...offer, id: 1 }, { status: 201, statusText: 'Created' });
     harness.detectChanges();
-    expect(saveButton(1).getAttribute('aria-label')).toContain('Sauvegardée');
+    expect(saveButton(1).getAttribute('aria-label')).toContain('Retirer');
     expect(saveButton().getAttribute('aria-label')).toContain('Sauvegarder');
   });
 
@@ -172,9 +219,7 @@ describe('Jobs search', () => {
     harness.detectChanges();
     expect(saveButton().disabled).toBe(true);
     expect(saveButton(1).disabled).toBe(false);
-    expect(
-      harness.routeNativeElement!.querySelector('.offer-card [role="status"]')!.textContent,
-    ).toContain('Sauvegarde en cours');
+    expect(harness.routeNativeElement!.querySelector('.offer-card [role="status"]')).toBeNull();
     saveButton(1).click();
     const requests = http.match('/api/jobs');
     expect(requests.map((request) => request.request.body.externalId)).toEqual(['ext-1', 'ext-2']);
@@ -183,11 +228,11 @@ describe('Jobs search', () => {
       { status: 201, statusText: 'Created' },
     );
     harness.detectChanges();
-    expect(saveButton(1).getAttribute('aria-label')).toContain('Sauvegardée');
+    expect(saveButton(1).getAttribute('aria-label')).toContain('Retirer');
     expect(saveButton().getAttribute('aria-label')).toContain('Sauvegarde en cours');
     requests[0].flush({ ...offer, id: 1 }, { status: 201, statusText: 'Created' });
     harness.detectChanges();
-    expect(saveButton().getAttribute('aria-label')).toContain('Sauvegardée');
+    expect(saveButton().getAttribute('aria-label')).toContain('Retirer');
   });
 
   it('shows a technical error only on the failed offer and allows retrying', async () => {
@@ -209,7 +254,7 @@ describe('Jobs search', () => {
     expect(cards[0].querySelector('[role="alert"]')).toBeNull();
     http.expectOne('/api/jobs').flush({ ...offer, id: 1 }, { status: 201, statusText: 'Created' });
     harness.detectChanges();
-    expect(saveButton().getAttribute('aria-label')).toContain('Sauvegardée');
+    expect(saveButton().getAttribute('aria-label')).toContain('Retirer');
   });
 
   it('treats a duplicate as already saved rather than a technical error', async () => {
@@ -217,8 +262,8 @@ describe('Jobs search', () => {
     saveButton().click();
     http.expectOne('/api/jobs').flush({}, { status: 409, statusText: 'Conflict' });
     harness.detectChanges();
-    expect(saveButton().getAttribute('aria-label')).toContain('Déjà sauvegardée');
-    expect(saveButton().disabled).toBe(true);
+    expect(saveButton().getAttribute('aria-label')).toContain('Retirer');
+    expect(saveButton().disabled).toBe(false);
     expect(harness.routeNativeElement!.querySelector('.offer-card [role="alert"]')).toBeNull();
   });
 
@@ -243,8 +288,8 @@ describe('Jobs search', () => {
     });
     request.flush({ ...offer, id: 1 }, { status: 201, statusText: 'Created' });
     harness.detectChanges();
-    expect(saveButton().getAttribute('aria-label')).toContain('Sauvegardée');
-    expect(saveButton().disabled).toBe(true);
+    expect(saveButton().getAttribute('aria-label')).toContain('Retirer');
+    expect(saveButton().disabled).toBe(false);
   });
 
   it('reports blank keywords supplied in the URL as invalid criteria', async () => {
