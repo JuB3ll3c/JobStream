@@ -1,0 +1,69 @@
+<section class="detail-page" [attr.aria-busy]="loading()">
+  <a routerLink="/jobs" [queryParams]="searchQueryParams" data-testid="back-to-search"
+    >Retour à la recherche</a
+  >
+  @if (!offer()) {
+    <h1>Détail de l’offre</h1>
+  }
+  @if (loading()) {
+    <p role="status">Chargement de l’offre…</p>
+  } @else if (error()) {
+    <p role="alert">{{ error() }}</p>
+  }
+  @if (offer(); as job) {
+    <article class="detail-card">
+      <h1>{{ job.title }}</h1>
+      <p>{{ job.company }} · {{ job.location }}</p>
+      <dl>
+        @if (job.postedDate) {
+          <div>
+            <dt>Date de publication</dt>
+            <dd>{{ job.postedDate | date: 'dd/MM/yyyy' }}</dd>
+          </div>
+        }
+        @if (job.contractType) {
+          <div>
+            <dt>Type de contrat</dt>
+            <dd>{{ job.contractType }}</dd>
+          </div>
+        }
+        @if (job.salaryMin != null) {
+          <div>
+            <dt>Salaire minimum</dt>
+            <dd>{{ job.salaryMin }}</dd>
+          </div>
+        }
+        @if (job.salaryMax != null) {
+          <div>
+            <dt>Salaire maximum</dt>
+            <dd>{{ job.salaryMax }}</dd>
+          </div>
+        }
+      </dl>
+      <section aria-labelledby="description-heading">
+        <h2 id="description-heading">Description disponible</h2>
+        <p class="description-note">La description peut être un extrait de l’annonce originale.</p>
+        @if (job.description) {
+          <p class="description">{{ job.description }}</p>
+        } @else {
+          <p>Aucune description disponible.</p>
+        }
+      </section>
+      @if (job.requirements?.length) {
+        <section aria-labelledby="requirements-heading">
+          <h2 id="requirements-heading">Informations complémentaires</h2>
+          <ul>
+            @for (requirement of job.requirements; track $index) {
+              <li>{{ requirement }}</li>
+            }
+          </ul>
+        </section>
+      }
+      @if (job.jobUrl) {
+        <a [href]="job.jobUrl" target="_blank" rel="noopener noreferrer"
+          >Voir l’annonce originale</a
+        >
+      }
+    </article>
+  }
+</section>

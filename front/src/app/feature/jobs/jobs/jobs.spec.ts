@@ -7,6 +7,7 @@ import { BASE_PATH, JobDto } from '../../../generated';
 import { Jobs } from './jobs';
 import { Login } from '../../auth/login/login';
 import { authInterceptor } from '../../../core/service/auth/auth-interceptor';
+import { JobDetail } from '../job-detail/job-detail';
 
 describe('Jobs search', () => {
   let http: HttpTestingController;
@@ -16,6 +17,7 @@ describe('Jobs search', () => {
       providers: [
         provideRouter([
           { path: 'jobs', component: Jobs },
+          { path: 'jobs/:externalId', component: JobDetail },
           { path: 'login', component: Login },
         ]),
         provideHttpClient(withInterceptors([authInterceptor])),
@@ -61,6 +63,30 @@ describe('Jobs search', () => {
       index
     ];
   }
+
+  it('opens the selected offer without refetching and keeps the search URL context', async () => {
+    await harness.navigateByUrl('/jobs?title=Java&location=Zurich&page=2&size=10', Jobs);
+    http
+      .expectOne((req) => req.url === '/api/job-offers')
+      .flush({
+        content: [offer],
+        page: 2,
+        size: 10,
+        totalElements: 11,
+        totalPages: 2,
+      });
+    harness.detectChanges();
+    const link = harness.routeNativeElement!.querySelector<HTMLAnchorElement>('.offer-card h2 a')!;
+    expect(link.getAttribute('href')).toBe('/jobs/ext-1?title=Java&location=Zurich&page=2&size=10');
+    link.click();
+    await harness.fixture.whenStable();
+    harness.detectChanges();
+    expect(TestBed.inject(Router).url).toBe(
+      '/jobs/ext-1?title=Java&location=Zurich&page=2&size=10',
+    );
+    expect(harness.routeNativeElement!.querySelector('h1')!.textContent).toBe('Java Engineer');
+    http.expectNone((req) => req.url === '/api/job-offers' || req.url.startsWith('/api/adzuna/'));
+  });
 
   it('uses an accessible bookmark icon that fills when saved', async () => {
     await showOffers();

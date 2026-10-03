@@ -102,6 +102,22 @@ input[aria-invalid='true'] {
   font-size: 1.25rem;
 }
 
+.offer-card h2 a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.offer-card h2 a:hover {
+  color: var(--jobstream-color-primary);
+  text-decoration: underline;
+}
+
+.offer-card h2 a:focus-visible {
+  outline: 3px solid var(--jobstream-color-primary);
+  outline-offset: 3px;
+  border-radius: var(--jobstream-radius-small);
+}
+
 .offer-save {
   display: contents;
 }

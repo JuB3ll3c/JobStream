@@ -2,7 +2,7 @@ import { Component, DestroyRef, inject, signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { EMPTY, Subject, catchError, map, merge, switchMap, tap } from 'rxjs';
 import {
   JobDto,
@@ -16,7 +16,7 @@ type SaveState = 'saving' | 'saved' | 'duplicate' | 'error';
 
 @Component({
   selector: 'app-jobs',
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, RouterLink],
   templateUrl: './jobs.html',
   styleUrl: './jobs.scss',
 })
@@ -109,6 +109,10 @@ export class Jobs {
     } else {
       void this.router.navigateByUrl(target);
     }
+  }
+
+  get detailQueryParams() {
+    return this.route.snapshot.queryParams;
   }
 
   changePage(page: number): void {

@@ -47,7 +47,14 @@
         <article class="offer-card">
           @let saveState = saveStates().get(offer.externalId);
           <div class="offer-content">
-            <h2>{{ offer.title }}</h2>
+            <h2>
+              <a
+                [routerLink]="['/jobs', offer.externalId]"
+                [queryParams]="detailQueryParams"
+                [state]="{ offer }"
+                >{{ offer.title }}</a
+              >
+            </h2>
             <p>{{ offer.company }} · {{ offer.location }}</p>
             @if (offer.description) {
               <p>{{ offer.description }}</p>

@@ -22,4 +22,9 @@ export const routes: Routes = [
     canActivate: [authGuard],
     loadComponent: () => import('./feature/jobs/jobs/jobs').then((m) => m.Jobs),
   },
+  {
+    path: 'jobs/:externalId',
+    canActivate: [authGuard],
+    loadComponent: () => import('./feature/jobs/job-detail/job-detail').then((m) => m.JobDetail),
+  },
 ];
