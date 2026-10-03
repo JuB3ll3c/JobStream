@@ -15,10 +15,12 @@ import {
   tap,
 } from 'rxjs';
 import { JobDto, JobOfferService } from '../../../generated';
+import { JobSaving } from '../service/job-saving';
 
 @Component({
   selector: 'app-job-detail',
   imports: [RouterLink, DatePipe],
+  providers: [JobSaving],
   templateUrl: './job-detail.html',
   styleUrl: './job-detail.scss',
 })
@@ -26,12 +28,18 @@ export class JobDetail {
   private readonly route = inject(ActivatedRoute);
   private readonly api = inject(JobOfferService);
   private readonly router = inject(Router);
+  private readonly jobSaving = inject(JobSaving);
+  readonly saveStates = this.jobSaving.states;
   readonly offer = signal<JobDto | null>(null);
   readonly loading = signal(true);
   readonly error = signal<string | null>(null);
 
   get searchQueryParams() {
     return this.route.snapshot.queryParams;
+  }
+
+  save(offer: JobDto): void {
+    this.jobSaving.save(offer);
   }
 
   constructor() {

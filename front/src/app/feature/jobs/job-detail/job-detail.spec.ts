@@ -46,6 +46,152 @@ describe('External job detail', () => {
     }
   });
 
+  async function showDetail(job: JobDto = offer): Promise<void> {
+    await harness.navigateByUrl(`/jobs/${job.externalId}?title=Java`, JobDetail);
+    http
+      .expectOne((req) => req.url === '/api/job-offers')
+      .flush({
+        content: [job],
+        page: 1,
+        size: 20,
+        totalElements: 1,
+        totalPages: 1,
+      });
+    harness.detectChanges();
+  }
+
+  function bookmark(): HTMLButtonElement {
+    return harness.routeNativeElement!.querySelector<HTMLButtonElement>('.bookmark-button')!;
+  }
+
+  it('marks an existing saved offer as already saved without a technical error', async () => {
+    await showDetail();
+    bookmark().click();
+    http.expectOne('/api/jobs').flush({}, { status: 409, statusText: 'Conflict' });
+    harness.detectChanges();
+    expect(bookmark().getAttribute('aria-label')).toBe('Déjà sauvegardée : Java Engineer');
+    expect(bookmark().getAttribute('aria-pressed')).toBe('true');
+    expect(bookmark().disabled).toBe(true);
+    expect(harness.routeNativeElement!.querySelector('.save-feedback [role="status"]')).toBeNull();
+    expect(harness.routeNativeElement!.querySelector('.save-feedback [role="alert"]')).toBeNull();
+    bookmark().click();
+    http.expectNone('/api/jobs');
+  });
+
+  it('allows retrying a failed save without losing the detail', async () => {
+    await showDetail();
+    bookmark().click();
+    http
+      .expectOne('/api/jobs')
+      .flush({ message: 'private technical details' }, { status: 500, statusText: 'Error' });
+    harness.detectChanges();
+    expect(
+      harness.routeNativeElement!.querySelector('.save-feedback [role="alert"]')!.textContent,
+    ).toContain('Impossible de sauvegarder');
+    expect(harness.routeNativeElement!.textContent).not.toContain('private technical details');
+    expect(harness.routeNativeElement!.querySelector('h1')!.textContent).toBe('Java Engineer');
+    expect(bookmark().disabled).toBe(false);
+    bookmark().click();
+    harness.detectChanges();
+    expect(harness.routeNativeElement!.querySelector('.save-feedback [role="alert"]')).toBeNull();
+    http.expectOne('/api/jobs').flush({ ...offer, id: 1 });
+    harness.detectChanges();
+    expect(bookmark().getAttribute('aria-pressed')).toBe('true');
+  });
+
+  it('blocks a double click before the pending state has rendered', async () => {
+    await showDetail();
+    bookmark().click();
+    bookmark().click();
+    const request = http.expectOne('/api/jobs');
+    harness.detectChanges();
+    expect(bookmark().disabled).toBe(true);
+    expect(
+      harness.routeNativeElement!.querySelector('.save-feedback [role="status"]')!.textContent,
+    ).toContain('Sauvegarde en cours');
+    request.flush({ ...offer, id: 1 });
+    harness.detectChanges();
+    bookmark().click();
+    http.expectNone('/api/jobs');
+  });
+
+  it('redirects to login when the session expires during a detail save', async () => {
+    await showDetail();
+    sessionStorage.setItem('access_token', 'expired-token');
+    bookmark().click();
+    http.expectOne('/api/jobs').flush({}, { status: 401, statusText: 'Unauthorized' });
+    await harness.fixture.whenStable();
+    harness.detectChanges();
+    expect(TestBed.inject(Router).url).toBe('/login');
+    expect(sessionStorage.getItem('access_token')).toBeNull();
+    expect(harness.routeNativeElement!.querySelector('#email')).not.toBeNull();
+    expect(harness.routeNativeElement!.textContent).not.toContain('Impossible de sauvegarder');
+  });
+
+  it('keeps saving state tied to its offer when the detail changes', async () => {
+    await showDetail();
+    bookmark().click();
+    const saving = http.expectOne('/api/jobs');
+    await showDetail({ ...offer, externalId: 'ext-2', title: 'Another Engineer' });
+    expect(bookmark().disabled).toBe(false);
+    saving.flush({ ...offer, id: 1 });
+    harness.detectChanges();
+    expect(bookmark().getAttribute('aria-label')).toBe('Sauvegarder Another Engineer');
+    expect(bookmark().getAttribute('aria-pressed')).toBe('false');
+  });
+
+  it('cancels a pending detail save when leaving the page', async () => {
+    await showDetail();
+    bookmark().click();
+    const saving = http.expectOne('/api/jobs');
+    await harness.navigateByUrl('/login', Login);
+    expect(saving.cancelled).toBe(true);
+    await showDetail();
+    expect(bookmark().disabled).toBe(false);
+    expect(bookmark().getAttribute('aria-pressed')).toBe('false');
+  });
+
+  it('saves the displayed offer using an accessible bookmark', async () => {
+    await showDetail({
+      ...offer,
+      description: 'An excerpt',
+      salaryMin: 80000,
+      contractType: 'permanent',
+      postedDate: '2026-10-01',
+      requirements: ['Java'],
+      jobUrl: 'https://example.com/job/1',
+      id: 99,
+      createdAt: '2026-10-02T00:00:00Z',
+    });
+    expect(bookmark().getAttribute('aria-label')).toBe('Sauvegarder Java Engineer');
+    expect(bookmark().getAttribute('aria-pressed')).toBe('false');
+    expect(bookmark().querySelector('svg[aria-hidden="true"]')).not.toBeNull();
+    bookmark().click();
+    harness.detectChanges();
+    expect(bookmark().disabled).toBe(true);
+    expect(bookmark().getAttribute('aria-busy')).toBe('true');
+    const request = http.expectOne('/api/jobs');
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual({
+      externalId: 'ext-1',
+      title: 'Java Engineer',
+      company: 'Acme',
+      location: 'Zurich',
+      description: 'An excerpt',
+      salaryMin: 80000,
+      contractType: 'permanent',
+      postedDate: '2026-10-01',
+      requirements: ['Java'],
+      jobUrl: 'https://example.com/job/1',
+    });
+    request.flush({ ...offer, id: 1 }, { status: 201, statusText: 'Created' });
+    harness.detectChanges();
+    expect(bookmark().getAttribute('aria-pressed')).toBe('true');
+    expect(bookmark().getAttribute('aria-label')).toBe('Sauvegardée : Java Engineer');
+    expect(bookmark().disabled).toBe(true);
+    expect(harness.routeNativeElement!.querySelector('.save-feedback [role="status"]')).toBeNull();
+  });
+
   it('cancels obsolete detail retrieval when the route changes', async () => {
     await harness.navigateByUrl('/jobs/ext-1?title=Java', JobDetail);
     const oldRequest = http.expectOne((req) => req.url === '/api/job-offers');

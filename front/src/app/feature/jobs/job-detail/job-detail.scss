@@ -59,8 +59,55 @@ dd {
   color: #b42318;
 }
 
-a:focus-visible {
+a:focus-visible,
+button:focus-visible {
   outline: 3px solid var(--jobstream-color-primary);
   outline-offset: 3px;
   border-radius: var(--jobstream-radius-small);
+}
+
+.detail-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1rem;
+  align-items: start;
+}
+
+.bookmark-button {
+  display: grid;
+  place-items: center;
+  width: 2.875rem;
+  min-height: 2.875rem;
+  padding: 0.625rem;
+  border: 1px solid transparent;
+  border-radius: var(--jobstream-radius-small);
+  background: transparent;
+  color: var(--jobstream-color-primary);
+  cursor: pointer;
+}
+
+.bookmark-button:hover:not(:disabled) {
+  background: var(--jobstream-color-background);
+}
+
+.bookmark-button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.bookmark-button svg {
+  width: 1.5rem;
+  height: 1.5rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.75;
+  stroke-linejoin: round;
+}
+
+.bookmark-button[aria-pressed='true'] svg {
+  fill: currentColor;
+}
+
+.save-feedback [role='status'] {
+  color: var(--jobstream-color-accent);
 }
