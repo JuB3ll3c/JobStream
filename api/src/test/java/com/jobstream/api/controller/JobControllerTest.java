@@ -71,7 +71,7 @@ class JobControllerTest {
 
     @Test
     void savedOfferOperations_shouldReceiveUserThroughAuthenticationPrincipal() {
-        assertThat(JobApi.class.getDeclaredMethods()).hasSize(4);
+        assertThat(JobApi.class.getDeclaredMethods()).hasSize(5);
         for (var method : JobApi.class.getDeclaredMethods()) {
             var parameters = method.getParameters();
             var principal = parameters[parameters.length - 1];
@@ -109,6 +109,31 @@ class JobControllerTest {
 
     private MockHttpServletRequestBuilder asAlice(MockHttpServletRequestBuilder request) {
         return request.header("Authorization", "Bearer " + aliceToken);
+    }
+
+    @Test
+    void getJobByExternalId_shouldReturnOnlyAuthenticatedOwnersMatchingOffer() throws Exception {
+        createJob("shared-external-id", bob);
+        Job offer = createJob("shared-external-id", alice);
+
+        mockMvc.perform(asAlice(get("/jobs/by-external-id/{externalId}", "shared-external-id")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(offer.getId()))
+                .andExpect(jsonPath("$.externalId").value("shared-external-id"))
+                .andExpect(jsonPath("$.title").value("Java Developer"));
+    }
+
+    @Test
+    void getJobByExternalId_shouldReturn404ForForeignOrMissingOffer() throws Exception {
+        createJob("foreign-offer", bob);
+
+        for (String externalId : new String[]{"foreign-offer", "missing-offer"}) {
+            mockMvc.perform(asAlice(get("/jobs/by-external-id/{externalId}", externalId))
+                            .param("userId", bob.getId().toString()))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.status").value(404))
+                    .andExpect(jsonPath("$.error").value("Job not found"));
+        }
     }
 
     @Test
@@ -234,7 +259,7 @@ class JobControllerTest {
     @Test
     void allOperations_shouldRequireAuthentication() throws Exception {
         for (var request : new MockHttpServletRequestBuilder[]{
-                get("/jobs"), get("/jobs/1"), delete("/jobs/1"),
+                get("/jobs"), get("/jobs/1"), get("/jobs/by-external-id/job_1"), delete("/jobs/1"),
                 post("/jobs").contentType(MediaType.APPLICATION_JSON).content(JOB_JSON)}) {
             mockMvc.perform(request).andExpect(status().isUnauthorized());
         }

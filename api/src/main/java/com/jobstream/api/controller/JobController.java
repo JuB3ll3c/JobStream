@@ -30,6 +30,11 @@ public class JobController implements JobApi {
     }
 
     @Override
+    public ResponseEntity<JobDto> getJobByExternalId(String externalId, @AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(jobService.getJobByExternalId(externalId, user.getId()));
+    }
+
+    @Override
     public ResponseEntity<JobDto> getJobById(Long id, @AuthenticationPrincipal User user) {
         JobDto job = jobService.getJobById(id, user.getId());
         return ResponseEntity.ok(job);

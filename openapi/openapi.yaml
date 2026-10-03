@@ -185,6 +185,35 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+  /jobs/by-external-id/{externalId}:
+    get:
+      summary: Get a saved job by external ID
+      description: Returns only the authenticated user's saved offer matching the external ID. Missing offers and offers saved only by another user both return 404.
+      operationId: getJobByExternalId
+      x-spring-provide-args:
+        - '@org.springframework.security.core.annotation.AuthenticationPrincipal com.jobstream.api.entity.User user'
+      tags:
+        - Job
+      parameters:
+        - name: externalId
+          in: path
+          required: true
+          description: External ID of the saved offer
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Saved job details including its internal ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobDto'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /jobs/{id}:
     get:
       summary: Get a saved job detail

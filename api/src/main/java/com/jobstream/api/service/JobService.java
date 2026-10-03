@@ -32,6 +32,12 @@ public class JobService {
                 .map(jobMapper::toDto);
     }
 
+    public JobDto getJobByExternalId(String externalId, Long userId) {
+        return jobRepository.findByExternalIdAndUserId(externalId, userId)
+                .map(jobMapper::toDto)
+                .orElseThrow(() -> new ResourceNotFoundException("Job not found with external id: " + externalId));
+    }
+
     @Transactional
     public JobDto saveJob(Long userId, JobRequestDto jobRequestDto){
         if (jobRepository.existsByExternalIdAndUserId(jobRequestDto.getExternalId(), userId)) {

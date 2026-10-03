@@ -5,10 +5,14 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Repository;
 
+@Repository
 public interface JobRepository extends JpaRepository<Job, Long> {
 
     Optional<Job> findByIdAndUserId(Long id, Long userId);
+
+    Optional<Job> findByExternalIdAndUserId(String externalId, Long userId);
 
     Page<Job> findAllByUserId(Long userId, Pageable pageable);
 
