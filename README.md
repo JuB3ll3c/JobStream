@@ -146,6 +146,8 @@ Rel(analysisSvc, wsSender, "Pushes Update")
 | **Spring AI (planned)** | Portable AI abstraction; swap providers (OpenAI, Ollama, etc.) without code changes |
 | **WebSocket/SSE (planned)** | Real-time AI result delivery to frontend without polling |
 
+## Git flow
+![github_workflow.png](github_workflow.png)
 ## License
 
 MIT
