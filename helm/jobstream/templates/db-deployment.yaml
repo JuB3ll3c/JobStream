@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: db
+  namespace: jobstream
+  labels:
+    app: db
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: db
+  template:
+    metadata:
+      labels:
+        app: db
+    spec:
+      containers:
+        - name: db
+          image: postgres:18-alpine
+          ports:
+            - containerPort: 5432
+          envFrom:
+            - secretRef:
+                name: db-secret
+          volumeMounts:
+            - name: storage
+              mountPath: /var/lib/postgresql
+      volumes:
+        - name: storage
+          persistentVolumeClaim:
+            claimName: db-data

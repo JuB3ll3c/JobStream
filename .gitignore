@@ -29,3 +29,7 @@ out/
 #Kubernetes secrets
 k8s/backend/secret.yaml
 k8s/database/secret.yaml
+/helm/jobstream/templates/backend-secret.yaml
+/helm/jobstream/templates/db-secret.yaml
+/helm/jobstream/values-secret.yaml
+/helm/jobstream/values.yaml
