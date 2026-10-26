@@ -1,0 +1,8 @@
+**
+!.ci-artifacts/
+!.ci-artifacts/**
+!front/
+!front/nginx.conf
+!api/
+!api/Dockerfile
+!front/Dockerfile

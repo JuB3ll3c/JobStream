@@ -1,10 +1,12 @@
-
 name: Jobstream CI
 
 on:
   pull_request:
     branches:
       - develop
+      - main
+  push:
+    branches:
       - main
 
 permissions:
@@ -14,25 +16,42 @@ jobs:
   backend:
     name: Backend CI
     runs-on: ubuntu-latest
-
     defaults:
       run:
         working-directory: ./api
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v7
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Set up Java
-        uses: actions/setup-java@v6
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '25'
           cache: maven
           cache-dependency-path: api/pom.xml
 
-      - name: Build and test backend
-        run: mvn --batch-mode --no-transfer-progress verify
+      - name: Build and test
+        run: mvn -B -ntp verify
+
+      - name: Prepare JAR
+        run: |
+          mkdir -p ../.ci-artifacts/backend
+
+          JAR=$(find target -maxdepth 1 \
+            -name '*.jar' ! -name 'original-*' \
+            -print -quit)
+
+          test -n "$JAR"
+          cp "$JAR" ../.ci-artifacts/backend/app.jar
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-artifact
+          path: .ci-artifacts/backend/
+          if-no-files-found: error
+          retention-days: 7
 
   frontend:
     name: Frontend CI
@@ -43,18 +62,18 @@ jobs:
         working-directory: ./front
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v7
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v7
+      - name: Set up Node
+        uses: actions/setup-node@v4
         with:
-          node-version: '24.15.0'
+          node-version: '22.22.3'
           cache: npm
           cache-dependency-path: front/package-lock.json
 
-      - name: Set up Java for OpenAPI Generator
-        uses: actions/setup-java@v6
+      - name: Set up Java for OpenAPI
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '25'
@@ -64,3 +83,80 @@ jobs:
 
       - name: Build Angular
         run: npm run build
+
+      - name: Prepare Angular artifact
+        run: |
+          test -f dist/frontend/browser/index.html
+
+          mkdir -p ../.ci-artifacts/frontend
+
+          cp -a dist/frontend/browser/. \
+            ../.ci-artifacts/frontend/
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-artifact
+          path: .ci-artifacts/frontend/
+          if-no-files-found: error
+          retention-days: 7
+
+  docker:
+    name: Docker ${{ matrix.service.name }}
+    needs: [backend, frontend]
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: write
+
+    strategy:
+      matrix:
+        service:
+          - name: backend
+            dockerfile: ./api/Dockerfile
+          - name: frontend
+            dockerfile: ./front/Dockerfile
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ matrix.service.name }}-artifact
+          path: .ci-artifacts/${{ matrix.service.name }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Prepare image name
+        id: image
+        env:
+          OWNER: ${{ github.repository_owner }}
+          SERVICE: ${{ matrix.service.name }}
+        run: |
+          OWNER=$(echo "$OWNER" | tr '[:upper:]' '[:lower:]')
+          echo "name=ghcr.io/$OWNER/jobstream-$SERVICE" \
+            >> "$GITHUB_OUTPUT"
+
+      - name: Login to GHCR
+        if: github.event_name == 'push'
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: ${{ matrix.service.dockerfile }}
+          push: ${{ github.event_name == 'push' }}
+          tags: |
+            ${{ steps.image.outputs.name }}:sha-${{ github.sha }}
+            ${{ steps.image.outputs.name }}:latest
+          cache-from: type=gha,scope=${{ matrix.service.name }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.service.name }}
