@@ -86,11 +86,11 @@ jobs:
 
       - name: Prepare Angular artifact
         run: |
-          test -f dist/frontend/browser/index.html
+          test -f dist/front/browser/index.html
 
           mkdir -p ../.ci-artifacts/frontend
 
-          cp -a dist/frontend/browser/. \
+          cp -a dist/front/browser/. \
             ../.ci-artifacts/frontend/
 
       - name: Upload artifact
