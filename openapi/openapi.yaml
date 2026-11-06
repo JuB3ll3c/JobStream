@@ -214,6 +214,43 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+  /jobs/{id}/status:
+    patch:
+      summary: Update the tracking status of a saved job
+      description: Updates only an offer owned by the authenticated user. All four statuses are mutually reachable. Missing offers and offers owned by another user both return 404.
+      operationId: updateJobStatus
+      x-spring-provide-args:
+        - '@org.springframework.security.core.annotation.AuthenticationPrincipal com.jobstream.api.entity.User user'
+      tags:
+        - Job
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JobStatusUpdateRequest'
+      responses:
+        '200':
+          description: Saved job with its updated tracking status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobDto'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /jobs/{id}:
     get:
       summary: Get a saved job detail
@@ -423,6 +460,17 @@ components:
         role:
           $ref: '#/components/schemas/RoleDto'
 
+    JobStatus:
+      type: string
+      description: Tracking status of a saved job
+      enum: [TO_PROCESS, IN_PROGRESS, APPLIED, DONE]
+    JobStatusUpdateRequest:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          $ref: '#/components/schemas/JobStatus'
     JobRequestDto:
       type: object
       description: Job found via the external API (to be saved)
@@ -485,6 +533,8 @@ components:
             id:
               type: integer
               format: int64
+            status:
+              $ref: '#/components/schemas/JobStatus'
             createdAt:
               type: string
               format: date-time

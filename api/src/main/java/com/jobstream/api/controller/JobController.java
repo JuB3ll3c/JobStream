@@ -4,6 +4,7 @@ import com.jobstream.api.service.JobService;
 import com.jobstream.api.entity.User;
 import com.jobstream.dto.JobDto;
 import com.jobstream.dto.JobRequestDto;
+import com.jobstream.dto.JobStatusUpdateRequest;
 import com.jobstream.dto.PagedJobResponse;
 import com.jobstream.endpoint.JobApi;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +23,12 @@ import static com.jobstream.api.utils.PageUtils.toPagedResponse;
 @RequiredArgsConstructor
 public class JobController implements JobApi {
     private final JobService jobService;
+
+    @Override
+    public ResponseEntity<JobDto> updateJobStatus(Long id, JobStatusUpdateRequest request,
+                                                 @AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(jobService.updateJobStatus(id, user.getId(), request.getStatus()));
+    }
 
     @Override
     public ResponseEntity<Void> deleteJob(Long id, @AuthenticationPrincipal User user) {

@@ -1,5 +1,6 @@
 package com.jobstream.api.entity;
 
+import com.jobstream.dto.JobStatus;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -17,6 +18,10 @@ public class Job extends BaseEntity{
 
     @Column(name = "external_id", nullable = false)
     private String externalId;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private JobStatus status = JobStatus.TO_PROCESS;
 
     @Column(nullable = false)
     private String title;

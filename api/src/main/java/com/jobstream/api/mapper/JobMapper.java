@@ -11,6 +11,7 @@ import org.mapstruct.MappingConstants;
 @Mapper(componentModel = MappingConstants.ComponentModel.SPRING, injectionStrategy = InjectionStrategy.CONSTRUCTOR)
 public interface JobMapper {
     JobDto toDto(Job job);
+    @Mapping(target = "status", ignore = true)
     @Mapping(target = "user", ignore = true)
     Job toEntity(JobRequestDto jobRequestDto);
 }
