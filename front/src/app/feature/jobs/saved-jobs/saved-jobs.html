@@ -1,0 +1,57 @@
+<main>
+  <h1>Mes offres</h1>
+  @if (loading()) {
+    <p role="status">Chargement de vos offres…</p>
+  } @else if (error()) {
+    <div role="alert">
+      <p>{{ error() }}</p>
+      <button type="button" (click)="retry()">Réessayer</button>
+    </div>
+  } @else if (jobs().length === 0) {
+    <p role="status">
+      Aucune offre sauvegardée. Retrouvez ici les offres enregistrées depuis la recherche.
+    </p>
+  } @else {
+    <p class="instructions">
+      Glissez les offres vers la colonne souhaitée pour changer leur statut.
+    </p>
+    @if (moveError()) {
+      <p role="alert">{{ moveError() }}</p>
+    }
+    <p class="sr-only" role="status">{{ announcement() }}</p>
+    <div class="kanban" cdkDropListGroup>
+      @for (column of columns; track column.status) {
+        <section
+          class="kanban-column"
+          [attr.data-status]="column.status"
+          cdkDropList
+          [cdkDropListData]="column.status"
+          [cdkDropListSortingDisabled]="true"
+          (cdkDropListDropped)="drop($event)"
+          [attr.aria-label]="column.label"
+        >
+          <h2>
+            {{ column.label }} <span>{{ jobsFor(column.status).length }}</span>
+          </h2>
+          @for (job of jobsFor(column.status); track job.id) {
+            <article
+              class="job-card"
+              cdkDrag
+              [cdkDragData]="job"
+              [cdkDragDisabled]="job.id == null || pending().has(job.id!)"
+              [attr.aria-busy]="job.id != null && pending().has(job.id!)"
+            >
+              <span class="drag-handle" cdkDragHandle aria-hidden="true">⠿</span>
+              <h3>{{ job.title }}</h3>
+              <p>{{ job.company }}</p>
+              <p>{{ job.location }}</p>
+              @if (job.id != null && pending().has(job.id!)) {
+                <p class="saving">Enregistrement…</p>
+              }
+            </article>
+          }
+        </section>
+      }
+    </div>
+  }
+</main>

@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { Router } from '@angular/router';
+import { provideRouter, Router } from '@angular/router';
 
 import { AuthService } from '../../core/service/auth/auth-service';
 import { Navbar } from './navbar';
@@ -11,20 +11,18 @@ describe('Navbar', () => {
     isAuthenticated: ReturnType<typeof vi.fn>;
     logout: ReturnType<typeof vi.fn>;
   };
-  let router: { navigate: ReturnType<typeof vi.fn> };
+  let router: Router;
 
   beforeEach(async () => {
     authService = { isAuthenticated: vi.fn(() => true), logout: vi.fn() };
-    router = { navigate: vi.fn() };
 
     await TestBed.configureTestingModule({
       imports: [Navbar],
-      providers: [
-        { provide: AuthService, useValue: authService },
-        { provide: Router, useValue: router },
-      ],
+      providers: [{ provide: AuthService, useValue: authService }, provideRouter([])],
     }).compileComponents();
 
+    router = TestBed.inject(Router);
+    vi.spyOn(router, 'navigate').mockResolvedValue(true);
     fixture = TestBed.createComponent(Navbar);
     component = fixture.componentInstance;
     await fixture.whenStable();
@@ -60,5 +58,18 @@ describe('Navbar', () => {
 
     expect(authService.logout).toHaveBeenCalledOnce();
     expect(router.navigate).toHaveBeenCalledWith(['/login']);
+  });
+  it('links authenticated users to search and their saved offers', () => {
+    const links = Array.from(fixture.nativeElement.querySelectorAll('a')) as HTMLAnchorElement[];
+    expect(links.map((link) => link.getAttribute('href'))).toEqual(['/jobs', '/saved-jobs']);
+    expect(links[1].textContent).toContain('Mes offres');
+  });
+
+  it('hides personal navigation when logged out', () => {
+    authService.isAuthenticated.mockReturnValue(false);
+    fixture.destroy();
+    fixture = TestBed.createComponent(Navbar);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('a')).toBeNull();
   });
 });

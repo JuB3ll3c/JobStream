@@ -18,6 +18,11 @@ export const routes: Routes = [
       import('./feature/auth/register/register/register').then((m) => m.Register),
   },
   {
+    path: 'saved-jobs',
+    canActivate: [authGuard],
+    loadComponent: () => import('./feature/jobs/saved-jobs/saved-jobs').then((m) => m.SavedJobs),
+  },
+  {
     path: 'jobs',
     canActivate: [authGuard],
     loadComponent: () => import('./feature/jobs/jobs/jobs').then((m) => m.Jobs),
