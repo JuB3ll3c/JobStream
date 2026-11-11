@@ -1,4 +1,4 @@
-import { inject, Injectable } from '@angular/core';
+import { inject, Injectable, signal } from '@angular/core';
 import { tap } from 'rxjs';
 import {
   AuthenticationService,
@@ -17,6 +17,7 @@ export class AuthService {
   private readonly tokenKey = 'access_token';
   private readonly tokenTypeKey = 'token_type';
   private readonly roleKey = 'role';
+  private readonly authenticated = signal(this.getToken() !== null);
 
   login(request: LoginRequest) {
     return this.authenticationApi
@@ -34,12 +35,14 @@ export class AuthService {
     sessionStorage.setItem(this.tokenKey, response.accessToken);
     sessionStorage.setItem(this.tokenTypeKey, response.tokenType);
     sessionStorage.setItem(this.roleKey, response.role);
+    this.authenticated.set(true);
   }
 
   logout(): void {
     sessionStorage.removeItem(this.tokenKey);
     sessionStorage.removeItem(this.tokenTypeKey);
     sessionStorage.removeItem(this.roleKey);
+    this.authenticated.set(false);
   }
 
   getToken(): string | null {
@@ -56,6 +59,6 @@ export class AuthService {
   }
 
   isAuthenticated(): boolean {
-    return this.getToken() !== null;
+    return this.authenticated();
   }
 }
