@@ -387,6 +387,147 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '409':
           $ref: '#/components/responses/Conflict'
+  # --------------------------------------------------------------------------
+  # CV - Single active PDF owned by the authenticated user
+  # --------------------------------------------------------------------------
+  /me/cv:
+    get:
+      summary: Get the current user's CV metadata
+      description: Returns information about the authenticated user's single active CV, without its binary content or extracted text. The owner is taken from the authentication context.
+      operationId: getCvMetadata
+      x-spring-provide-args:
+        - '@org.springframework.security.core.annotation.AuthenticationPrincipal com.jobstream.api.entity.User user'
+      tags:
+        - Cv
+      responses:
+        '200':
+          description: Metadata of the active CV
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CvMetadataDto'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/CvNotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    put:
+      summary: Import or replace the current user's CV
+      description: |
+        Accepts one non-empty PDF file of at most 5 Mo (5,000,000 bytes), sent as raw binary in the required multipart field "file".
+        The owner is taken exclusively from the authentication context; no user identifier is accepted.
+        Each user has at most one active CV. A successful import creates it or atomically replaces the previous PDF and its metadata.
+        Validation must complete before replacement. If the request fails, the previous CV remains available and its version does not change.
+        The file size limit applies to the PDF bytes, excluding multipart overhead, and must be enforced by the server.
+        Text extraction and analysis are not performed by this operation.
+      operationId: uploadCv
+      x-spring-provide-args:
+        - '@org.springframework.security.core.annotation.AuthenticationPrincipal com.jobstream.api.entity.User user'
+      tags:
+        - Cv
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Non-empty PDF file. Maximum file size is 5,000,000 bytes; filename and declared media type alone do not establish that the content is a PDF.
+                  x-max-size-bytes: 5000000
+            encoding:
+              file:
+                contentType: application/pdf
+      responses:
+        '200':
+          description: Existing CV successfully replaced; returns the new metadata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CvMetadataDto'
+        '201':
+          description: First active CV successfully created
+          headers:
+            Location:
+              description: URI of the current user's CV metadata
+              schema:
+                type: string
+              example: /api/me/cv
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CvMetadataDto'
+        '400':
+          $ref: '#/components/responses/InvalidCv'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '413':
+          $ref: '#/components/responses/CvTooLarge'
+        '415':
+          $ref: '#/components/responses/UnsupportedCvMediaType'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    delete:
+      summary: Delete the current user's CV
+      description: Deletes only the authenticated user's active CV, including its PDF and metadata. Returns 404 when the user has no active CV.
+      operationId: deleteCv
+      x-spring-provide-args:
+        - '@org.springframework.security.core.annotation.AuthenticationPrincipal com.jobstream.api.entity.User user'
+      tags:
+        - Cv
+      responses:
+        '204':
+          description: Active CV deleted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/CvNotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /me/cv/file:
+    get:
+      summary: Download the current user's CV PDF
+      description: Returns the original PDF bytes owned by the authenticated user. The content is not encoded in JSON or Base64.
+      operationId: downloadCv
+      x-spring-provide-args:
+        - '@org.springframework.security.core.annotation.AuthenticationPrincipal com.jobstream.api.entity.User user'
+      tags:
+        - Cv
+      responses:
+        '200':
+          description: Original CV PDF
+          headers:
+            Content-Disposition:
+              description: Attachment disposition with a safely encoded download filename
+              schema:
+                type: string
+              example: 'attachment; filename="cv.pdf"'
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/CvNotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
 # ============================================================================
 # COMPONENTS - Schemas & Responses
 # ============================================================================
@@ -398,6 +539,38 @@ components:
       bearerFormat: JWT
 
   schemas:
+    CvMetadataDto:
+      type: object
+      description: Metadata of the authenticated user's active CV. File bytes and extracted text are not included.
+      required:
+        - originalFilename
+        - sizeBytes
+        - uploadedAt
+        - version
+      properties:
+        originalFilename:
+          type: string
+          minLength: 1
+          description: Original filename, without directory components
+          example: cv.pdf
+        sizeBytes:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 5000000
+          description: Size of the PDF in bytes
+          example: 152340
+        uploadedAt:
+          type: string
+          format: date-time
+          description: Date of the latest successful import
+        version:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Revision number of the active CV, incremented on each successful replacement
+          example: 1
+
     RegisterRequest:
       type: object
       required:
@@ -636,6 +809,47 @@ components:
   # Responses
   # ----------------------------------------------------------------------
   responses:
+    CvNotFound:
+      description: The authenticated user has no active CV
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            status: 404
+            error: Not Found
+            message: No active CV found
+    InvalidCv:
+      description: Missing or empty file, invalid multipart body, or malformed PDF. Any previous CV remains unchanged.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            status: 400
+            error: Bad Request
+            message: A valid non-empty PDF file is required
+    CvTooLarge:
+      description: The PDF exceeds 5,000,000 bytes. Any previous CV remains unchanged.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            status: 413
+            error: Content Too Large
+            message: The CV must not exceed 5,000,000 bytes
+    UnsupportedCvMediaType:
+      description: Unsupported request or file media type. Only a PDF file sent as multipart/form-data is accepted. Any previous CV remains unchanged.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            status: 415
+            error: Unsupported Media Type
+            message: Only PDF files are accepted
+
     BadRequest:
       description: Invalid request
       content:
