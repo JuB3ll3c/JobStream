@@ -119,7 +119,9 @@ describe('Jobs search', () => {
     expect(TestBed.inject(Router).url).toBe('/jobs?title=Java&location=Zurich&page=2&size=10');
     const dialog = harness.routeNativeElement!.querySelector('dialog')!;
     expect(dialog.open).toBe(true);
-    expect(dialog.querySelector('app-job-detail')!.textContent).toContain('Java Engineer');
+    expect(dialog.querySelector('.detail-title .bookmark-button')).not.toBeNull();
+    expect(dialog.querySelectorAll('.close-detail')).toHaveLength(1);
+    expect(dialog.querySelector('.detail-card')!.textContent).toContain('Java Engineer');
     http.expectNone(() => true);
     dialog.querySelector<HTMLButtonElement>('.close-detail')!.click();
     harness.detectChanges();

@@ -51,7 +51,7 @@
                 type="button"
                 class="detail-trigger"
                 #opener
-                (click)="openDetail(offer, detailDialog, opener)"
+                (click)="openDetail(offer, opener)"
               >
                 {{ offer.title }}
               </button>
@@ -93,32 +93,29 @@
   </section>
 </section>
 
-<dialog
-  #detailDialog
-  class="detail-dialog"
-  [attr.aria-label]="selectedJob()?.title ?? 'Détail de l’offre'"
-  (close)="closeDetail()"
->
-  <button
-    type="button"
-    class="close-detail"
-    aria-label="Fermer le détail"
-    autofocus
-    (click)="detailDialog.close()"
+@if (selectedJob(); as job) {
+  @let saveState = saveStates().get(job.externalId);
+  <app-job-detail
+    [job]="job"
+    [bookmarked]="
+      saveState === 'saved' ||
+      saveState === 'duplicate' ||
+      saveState === 'removing' ||
+      saveState === 'remove-error'
+    "
+    [bookmarkBusy]="saveState === 'saving' || saveState === 'removing'"
+    (bookmarkToggle)="toggle(job)"
+    (closed)="closeDetail()"
   >
-    <span aria-hidden="true">×</span>
-  </button>
-  @if (selectedJob(); as job) {
-    <app-job-detail [job]="job">
-      <div job-actions class="modal-actions">
-        <ng-container
-          [ngTemplateOutlet]="saveAction"
-          [ngTemplateOutletContext]="{ $implicit: job }"
-        />
-      </div>
-    </app-job-detail>
-  }
-</dialog>
+    <div job-actions class="modal-actions">
+      @if (saveState === 'error') {
+        <p role="alert">Impossible de sauvegarder cette offre. Réessayez.</p>
+      } @else if (saveState === 'remove-error') {
+        <p role="alert">Impossible de retirer cette offre. Réessayez.</p>
+      }
+    </div>
+  </app-job-detail>
+}
 
 <ng-template #saveAction let-offer>
   @let saveState = saveStates().get(offer.externalId);

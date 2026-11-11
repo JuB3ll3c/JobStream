@@ -1,5 +1,5 @@
-<main>
-  <h1>Mes offres</h1>
+<main #board>
+  <h1 #boardHeading tabindex="-1">Mes offres</h1>
   @if (loading()) {
     <p role="status">Chargement de vos offres…</p>
   } @else if (error()) {
@@ -48,7 +48,7 @@
                     type="button"
                     class="detail-trigger"
                     [attr.data-job-id]="job.id"
-                    (click)="openDetail(job, detailDialog)"
+                    (click)="openDetail(job)"
                   >
                     {{ job.title }}
                   </button>
@@ -68,46 +68,80 @@
     </div>
   }
 
-  <dialog
-    #detailDialog
-    class="detail-dialog"
-    [attr.aria-label]="selectedJob()?.title ?? 'Détail de l’offre'"
-    (close)="closeDetail(detailDialog)"
-  >
-    <button
-      type="button"
-      class="close-detail"
-      aria-label="Fermer le détail"
-      autofocus
-      (click)="detailDialog.close()"
+  @if (selectedJob(); as job) {
+    <app-job-detail
+      [job]="job"
+      [bookmarked]="true"
+      [bookmarkBusy]="removing()"
+      [bookmarkDisabled]="pending().has(job.id!)"
+      [closeDisabled]="removing()"
+      (bookmarkToggle)="requestRemoval(removalDialog)"
+      (closed)="closeDetail(board, boardHeading)"
     >
-      <span aria-hidden="true">×</span>
-    </button>
+      <div
+        job-actions
+        class="modal-actions"
+        [attr.aria-busy]="pending().has(job.id!) || removing()"
+      >
+        <label for="modal-job-status">Statut de la candidature</label>
+        <select
+          id="modal-job-status"
+          #statusSelect
+          [disabled]="pending().has(job.id!) || confirmingRemoval() || removing()"
+          (change)="selectStatus(statusSelect, job)"
+        >
+          @for (column of columns; track column.status) {
+            <option [value]="column.status" [selected]="column.status === job.status">
+              {{ column.label }}
+            </option>
+          }
+        </select>
+        @if (pending().has(job.id!)) {
+          <p role="status">Enregistrement…</p>
+        }
+        @if (moveError()) {
+          <p role="alert">{{ moveError() }}</p>
+        }
+        <p role="status">{{ announcement() }}</p>
+      </div>
+    </app-job-detail>
+  }
+  <dialog
+    #removalDialog
+    class="removal-confirmation"
+    aria-labelledby="removal-heading"
+    aria-describedby="removal-description"
+    (cancel)="removing() && $event.preventDefault()"
+    (close)="confirmingRemoval.set(false); removalError.set(null)"
+  >
     @if (selectedJob(); as job) {
-      <app-job-detail [job]="job">
-        <div job-actions class="modal-actions" [attr.aria-busy]="pending().has(job.id!)">
-          <label for="modal-job-status">Statut de la candidature</label>
-          <select
-            id="modal-job-status"
-            #statusSelect
-            [disabled]="pending().has(job.id!)"
-            (change)="selectStatus(statusSelect, job)"
-          >
-            @for (column of columns; track column.status) {
-              <option [value]="column.status" [selected]="column.status === job.status">
-                {{ column.label }}
-              </option>
-            }
-          </select>
-          @if (pending().has(job.id!)) {
-            <p role="status">Enregistrement…</p>
-          }
-          @if (moveError()) {
-            <p role="alert">{{ moveError() }}</p>
-          }
-          <p role="status">{{ announcement() }}</p>
-        </div>
-      </app-job-detail>
+      <h2 id="removal-heading">Retirer « {{ job.title }} » de vos offres ?</h2>
+      <p id="removal-description">Cette offre sera retirée de votre kanban.</p>
+      <div class="removal-buttons">
+        <button
+          type="button"
+          class="cancel-removal"
+          autofocus
+          [disabled]="removing()"
+          (click)="removalDialog.close()"
+        >
+          Annuler
+        </button>
+        <button
+          type="button"
+          class="confirm-removal"
+          [disabled]="removing() || pending().has(job.id!)"
+          (click)="confirmRemoval(removalDialog, board, boardHeading)"
+        >
+          Retirer
+        </button>
+      </div>
+      @if (removing()) {
+        <p role="status">Retrait en cours…</p>
+      }
+      @if (removalError()) {
+        <p role="alert">{{ removalError() }}</p>
+      }
     }
   </dialog>
 </main>

@@ -1,55 +1,94 @@
 @let offer = job();
-<article class="detail-card">
-  <header>
-    <h2>{{ offer.title }}</h2>
-    <p>{{ offer.company }} · {{ offer.location }}</p>
-  </header>
-  <ng-content select="[job-actions]" />
-  <dl>
-    @if (offer.postedDate) {
-      <div>
-        <dt>Date de publication</dt>
-        <dd>{{ offer.postedDate | date: 'dd/MM/yyyy' }}</dd>
+<dialog
+  #dialog
+  class="detail-dialog"
+  [attr.aria-label]="offer.title"
+  (close)="onClose()"
+  (cancel)="closeDisabled() && $event.preventDefault()"
+>
+  <button
+    type="button"
+    class="close-detail"
+    aria-label="Fermer le détail"
+    autofocus
+    [disabled]="closeDisabled()"
+    (click)="dialog.close()"
+  >
+    <span aria-hidden="true">×</span>
+  </button>
+  <article class="detail-card">
+    <header>
+      <div class="detail-title">
+        <h2>{{ offer.title }}</h2>
+        <button
+          type="button"
+          class="bookmark-button"
+          [attr.aria-label]="
+            bookmarkBusy()
+              ? (bookmarked() ? 'Retrait en cours : ' : 'Sauvegarde en cours : ') + offer.title
+              : (bookmarked() ? 'Retirer des offres sauvegardées : ' : 'Sauvegarder ') + offer.title
+          "
+          [attr.aria-pressed]="bookmarked()"
+          [attr.aria-busy]="bookmarkBusy()"
+          [disabled]="bookmarkBusy() || bookmarkDisabled()"
+          (click)="bookmarkToggle.emit()"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M6 3h12v18l-6-4-6 4V3Z" />
+          </svg>
+        </button>
       </div>
-    }
-    @if (offer.contractType) {
-      <div>
-        <dt>Type de contrat</dt>
-        <dd>{{ offer.contractType }}</dd>
-      </div>
-    }
-    @if (offer.salaryMin != null) {
-      <div>
-        <dt>Salaire minimum</dt>
-        <dd>{{ offer.salaryMin }}</dd>
-      </div>
-    }
-    @if (offer.salaryMax != null) {
-      <div>
-        <dt>Salaire maximum</dt>
-        <dd>{{ offer.salaryMax }}</dd>
-      </div>
-    }
-  </dl>
-  <section aria-labelledby="description-heading">
-    <h2 id="description-heading">Description</h2>
-    @if (offer.description) {
-      <p class="description">{{ offer.description }}</p>
-    } @else {
-      <p>Aucune description disponible.</p>
-    }
-  </section>
-  @if (offer.requirements?.length) {
-    <section aria-labelledby="requirements-heading">
-      <h2 id="requirements-heading">Informations complémentaires</h2>
-      <ul>
-        @for (requirement of offer.requirements; track $index) {
-          <li>{{ requirement }}</li>
-        }
-      </ul>
+      <p>{{ offer.company }} · {{ offer.location }}</p>
+    </header>
+    <ng-content select="[job-actions]" />
+    <dl>
+      @if (offer.postedDate) {
+        <div>
+          <dt>Date de publication</dt>
+          <dd>{{ offer.postedDate | date: 'dd/MM/yyyy' }}</dd>
+        </div>
+      }
+      @if (offer.contractType) {
+        <div>
+          <dt>Type de contrat</dt>
+          <dd>{{ offer.contractType }}</dd>
+        </div>
+      }
+      @if (offer.salaryMin != null) {
+        <div>
+          <dt>Salaire minimum</dt>
+          <dd>{{ offer.salaryMin }}</dd>
+        </div>
+      }
+      @if (offer.salaryMax != null) {
+        <div>
+          <dt>Salaire maximum</dt>
+          <dd>{{ offer.salaryMax }}</dd>
+        </div>
+      }
+    </dl>
+    <section aria-labelledby="description-heading">
+      <h2 id="description-heading">Description</h2>
+      @if (offer.description) {
+        <p class="description">{{ offer.description }}</p>
+      } @else {
+        <p>Aucune description disponible.</p>
+      }
     </section>
-  }
-  @if (offer.jobUrl) {
-    <a [href]="offer.jobUrl" target="_blank" rel="noopener noreferrer">Voir l’annonce originale</a>
-  }
-</article>
+    @if (offer.requirements?.length) {
+      <section aria-labelledby="requirements-heading">
+        <h2 id="requirements-heading">Informations complémentaires</h2>
+        <ul>
+          @for (requirement of offer.requirements; track $index) {
+            <li>{{ requirement }}</li>
+          }
+        </ul>
+      </section>
+    }
+    @if (offer.jobUrl) {
+      <a [href]="offer.jobUrl" target="_blank" rel="noopener noreferrer"
+        >Voir l’annonce originale</a
+      >
+    }
+  </article>
+</dialog>

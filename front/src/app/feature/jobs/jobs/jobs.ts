@@ -25,10 +25,9 @@ export class Jobs {
   readonly selectedJob = signal<JobDto | null>(null);
   private detailOpener?: HTMLButtonElement;
 
-  openDetail(job: JobDto, dialog: HTMLDialogElement, opener: HTMLButtonElement): void {
+  openDetail(job: JobDto, opener: HTMLButtonElement): void {
     this.selectedJob.set(job);
     this.detailOpener = opener;
-    dialog.showModal();
   }
 
   closeDetail(): void {

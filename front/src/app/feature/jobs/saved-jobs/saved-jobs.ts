@@ -28,22 +28,63 @@ export class SavedJobs {
     { status: JobStatus.Done, label: 'Terminé' },
   ];
   readonly jobs = signal<JobDto[]>([]);
+  readonly confirmingRemoval = signal(false);
+  readonly removing = signal(false);
+  readonly removalError = signal<string | null>(null);
+
+  requestRemoval(dialog: HTMLDialogElement): void {
+    const id = this.selectedId();
+    if (id == null || this.pending().has(id) || this.removing() || this.confirmingRemoval()) return;
+    this.confirmingRemoval.set(true);
+    this.removalError.set(null);
+    dialog.showModal();
+  }
+
+  confirmRemoval(dialog: HTMLDialogElement, board: HTMLElement, heading: HTMLHeadingElement): void {
+    const id = this.selectedId();
+    if (id == null || !this.confirmingRemoval() || this.removing() || this.pending().has(id))
+      return;
+    this.removing.set(true);
+    this.removalError.set(null);
+    this.api
+      .deleteJob({ id })
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => this.removing.set(false)),
+      )
+      .subscribe({
+        next: () => {
+          dialog.close();
+          this.jobs.update((jobs) => jobs.filter((job) => job.id !== id));
+          this.removing.set(false);
+          this.closeDetail(board, heading);
+        },
+        error: () => this.removalError.set('Impossible de retirer cette offre. Réessayez.'),
+      });
+  }
+
   readonly selectedId = signal<number | null>(null);
   readonly selectedJob = computed(
     () => this.jobs().find((job) => job.id === this.selectedId()) ?? null,
   );
 
-  openDetail(job: JobDto, dialog: HTMLDialogElement): void {
-    if (job.id == null) return;
+  openDetail(job: JobDto): void {
+    if (job.id == null || this.removing()) return;
+    this.confirmingRemoval.set(false);
+    this.removalError.set(null);
     this.selectedId.set(job.id);
     this.moveError.set(null);
-    dialog.showModal();
   }
 
-  closeDetail(dialog: HTMLDialogElement): void {
+  closeDetail(board: HTMLElement, heading: HTMLHeadingElement): void {
     const id = this.selectedId();
+    this.confirmingRemoval.set(false);
+    this.removalError.set(null);
     this.selectedId.set(null);
-    dialog.parentElement?.querySelector<HTMLButtonElement>('[data-job-id="' + id + '"]')?.focus();
+    const opener = this.jobs().some((job) => job.id === id)
+      ? board.querySelector<HTMLButtonElement>('[data-job-id="' + id + '"]')
+      : null;
+    (opener ?? heading).focus();
   }
 
   selectStatus(select: HTMLSelectElement, job: JobDto): void {
@@ -92,7 +133,14 @@ export class SavedJobs {
   private updateStatus(offer: JobDto, target: JobStatus): void {
     const id = offer.id;
     const job = this.jobs().find((job) => job.id === id);
-    if (id == null || !job || this.pending().has(id) || job.status === target) return;
+    if (
+      id == null ||
+      !job ||
+      this.pending().has(id) ||
+      job.status === target ||
+      (this.selectedId() === id && (this.confirmingRemoval() || this.removing()))
+    )
+      return;
     const previous = job.status;
     this.moveError.set(null);
     this.pending.update((ids) => new Set([...ids, id]));

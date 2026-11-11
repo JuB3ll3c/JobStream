@@ -125,50 +125,6 @@ button:focus-visible {
   white-space: nowrap;
 }
 
-.detail-dialog {
-  box-sizing: border-box;
-  width: min(52rem, calc(100vw - 2rem));
-  max-height: calc(100dvh - 2rem);
-  padding: clamp(1rem, 3vw, 2rem);
-  overflow-y: auto;
-  border: 1px solid var(--jobstream-color-border);
-  border-radius: var(--jobstream-radius-medium);
-  background: var(--jobstream-color-surface);
-  color: var(--jobstream-color-text);
-  box-shadow: 0 1rem 4rem rgb(15 23 42 / 25%);
-
-  &::backdrop {
-    background: rgb(15 23 42 / 55%);
-  }
-}
-
-.close-detail {
-  display: grid;
-  place-items: center;
-  width: 2.75rem;
-  height: 2.75rem;
-  min-height: 2.75rem;
-  margin: 0 0 1rem auto;
-  padding: 0;
-  border: 0;
-  border-radius: var(--jobstream-radius-small);
-  background: transparent;
-  color: var(--jobstream-color-text);
-  font-size: 2rem;
-  line-height: 1;
-  cursor: pointer;
-
-  &:hover:not(:disabled) {
-    background: var(--jobstream-color-background);
-    color: var(--jobstream-color-primary-dark);
-  }
-
-  &:focus-visible {
-    outline: 3px solid var(--jobstream-color-primary);
-    outline-offset: 2px;
-  }
-}
-
 .detail-trigger {
   padding: 0;
   min-height: 2.75rem;
@@ -218,4 +174,51 @@ button:focus-visible {
   [role='alert'] {
     color: #b42318;
   }
+}
+
+.confirm-removal {
+  border-color: #b42318;
+  color: #b42318;
+  justify-self: start;
+}
+
+.confirm-removal {
+  background: #b42318;
+  color: white;
+}
+
+.removal-confirmation {
+  box-sizing: border-box;
+  width: min(30rem, calc(100vw - 2rem));
+  max-height: calc(100dvh - 2rem);
+  padding: 1.5rem;
+  overflow-y: auto;
+  border: 1px solid var(--jobstream-color-border);
+  border-radius: var(--jobstream-radius-medium);
+  background: var(--jobstream-color-surface);
+  color: var(--jobstream-color-text);
+  box-shadow: 0 1rem 4rem rgb(15 23 42 / 25%);
+
+  &::backdrop {
+    background: rgb(15 23 42 / 55%);
+  }
+
+  h2 {
+    overflow-wrap: anywhere;
+  }
+
+  [role='alert'] {
+    color: #b42318;
+  }
+}
+
+.removal-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: default;
 }
