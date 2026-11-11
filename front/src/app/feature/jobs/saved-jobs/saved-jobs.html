@@ -42,7 +42,20 @@
               [attr.aria-busy]="job.id != null && pending().has(job.id!)"
             >
               <span class="drag-handle" cdkDragHandle aria-hidden="true">⠿</span>
-              <h3>{{ job.title }}</h3>
+              <h3>
+                @if (job.id != null) {
+                  <button
+                    type="button"
+                    class="detail-trigger"
+                    [attr.data-job-id]="job.id"
+                    (click)="openDetail(job, detailDialog)"
+                  >
+                    {{ job.title }}
+                  </button>
+                } @else {
+                  {{ job.title }}
+                }
+              </h3>
               <p>{{ job.company }}</p>
               <p>{{ job.location }}</p>
               @if (job.id != null && pending().has(job.id!)) {
@@ -54,4 +67,47 @@
       }
     </div>
   }
+
+  <dialog
+    #detailDialog
+    class="detail-dialog"
+    [attr.aria-label]="selectedJob()?.title ?? 'Détail de l’offre'"
+    (close)="closeDetail(detailDialog)"
+  >
+    <button
+      type="button"
+      class="close-detail"
+      aria-label="Fermer le détail"
+      autofocus
+      (click)="detailDialog.close()"
+    >
+      <span aria-hidden="true">×</span>
+    </button>
+    @if (selectedJob(); as job) {
+      <app-job-detail [job]="job">
+        <div job-actions class="modal-actions" [attr.aria-busy]="pending().has(job.id!)">
+          <label for="modal-job-status">Statut de la candidature</label>
+          <select
+            id="modal-job-status"
+            #statusSelect
+            [disabled]="pending().has(job.id!)"
+            (change)="selectStatus(statusSelect, job)"
+          >
+            @for (column of columns; track column.status) {
+              <option [value]="column.status" [selected]="column.status === job.status">
+                {{ column.label }}
+              </option>
+            }
+          </select>
+          @if (pending().has(job.id!)) {
+            <p role="status">Enregistrement…</p>
+          }
+          @if (moveError()) {
+            <p role="alert">{{ moveError() }}</p>
+          }
+          <p role="status">{{ announcement() }}</p>
+        </div>
+      </app-job-detail>
+    }
+  </dialog>
 </main>

@@ -1,15 +1,17 @@
 import { Component, inject, signal } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { EMPTY, Subject, catchError, map, merge, switchMap, tap } from 'rxjs';
 import { JobDto, JobOfferSearchResponse, JobOfferService } from '../../../generated';
+import { JobDetail } from '../job-detail/job-detail';
 import { JobSaving } from '../service/job-saving';
 
 @Component({
   selector: 'app-jobs',
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [ReactiveFormsModule, JobDetail, NgTemplateOutlet],
   providers: [JobSaving],
   templateUrl: './jobs.html',
   styleUrl: './jobs.scss',
@@ -20,6 +22,21 @@ export class Jobs {
   private readonly router = inject(Router);
   private readonly retry = new Subject<void>();
   private readonly jobSaving = inject(JobSaving);
+  readonly selectedJob = signal<JobDto | null>(null);
+  private detailOpener?: HTMLButtonElement;
+
+  openDetail(job: JobDto, dialog: HTMLDialogElement, opener: HTMLButtonElement): void {
+    this.selectedJob.set(job);
+    this.detailOpener = opener;
+    dialog.showModal();
+  }
+
+  closeDetail(): void {
+    this.selectedJob.set(null);
+    if (this.detailOpener?.isConnected) this.detailOpener.focus();
+    this.detailOpener = undefined;
+  }
+
   readonly saveStates = this.jobSaving.states;
   readonly form = new FormGroup({
     title: new FormControl('', {
@@ -102,10 +119,6 @@ export class Jobs {
     } else {
       void this.router.navigateByUrl(target);
     }
-  }
-
-  get detailQueryParams() {
-    return this.route.snapshot.queryParams;
   }
 
   changePage(page: number): void {

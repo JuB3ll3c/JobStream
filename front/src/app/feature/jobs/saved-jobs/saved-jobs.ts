@@ -5,14 +5,15 @@ import {
   CdkDropList,
   CdkDropListGroup,
 } from '@angular/cdk/drag-drop';
-import { Component, DestroyRef, inject, signal } from '@angular/core';
+import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { EMPTY, Subject, catchError, expand, finalize, reduce, startWith, switchMap } from 'rxjs';
+import { JobDetail } from '../job-detail/job-detail';
 import { JobDto, JobService, JobStatus } from '../../../generated';
 
 @Component({
   selector: 'app-saved-jobs',
-  imports: [CdkDrag, CdkDragHandle, CdkDropList, CdkDropListGroup],
+  imports: [JobDetail, CdkDrag, CdkDragHandle, CdkDropList, CdkDropListGroup],
   templateUrl: './saved-jobs.html',
   styleUrl: './saved-jobs.scss',
 })
@@ -27,6 +28,30 @@ export class SavedJobs {
     { status: JobStatus.Done, label: 'Terminé' },
   ];
   readonly jobs = signal<JobDto[]>([]);
+  readonly selectedId = signal<number | null>(null);
+  readonly selectedJob = computed(
+    () => this.jobs().find((job) => job.id === this.selectedId()) ?? null,
+  );
+
+  openDetail(job: JobDto, dialog: HTMLDialogElement): void {
+    if (job.id == null) return;
+    this.selectedId.set(job.id);
+    this.moveError.set(null);
+    dialog.showModal();
+  }
+
+  closeDetail(dialog: HTMLDialogElement): void {
+    const id = this.selectedId();
+    this.selectedId.set(null);
+    dialog.parentElement?.querySelector<HTMLButtonElement>('[data-job-id="' + id + '"]')?.focus();
+  }
+
+  selectStatus(select: HTMLSelectElement, job: JobDto): void {
+    const target = this.columns.find((column) => column.status === select.value)?.status;
+    select.value = job.status ?? '';
+    if (target) this.updateStatus(job, target);
+  }
+
   readonly pending = signal<ReadonlySet<number>>(new Set());
   readonly moveError = signal<string | null>(null);
   readonly announcement = signal('');
@@ -61,9 +86,12 @@ export class SavedJobs {
   }
 
   drop(event: CdkDragDrop<JobStatus, JobStatus, JobDto>): void {
-    const id = event.item.data.id;
+    this.updateStatus(event.item.data, event.container.data);
+  }
+
+  private updateStatus(offer: JobDto, target: JobStatus): void {
+    const id = offer.id;
     const job = this.jobs().find((job) => job.id === id);
-    const target = event.container.data;
     if (id == null || !job || this.pending().has(id) || job.status === target) return;
     const previous = job.status;
     this.moveError.set(null);

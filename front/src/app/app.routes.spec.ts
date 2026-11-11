@@ -9,12 +9,11 @@ import { provideRouter, Router } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { BASE_PATH } from './generated';
 import { SavedJobs } from './feature/jobs/saved-jobs/saved-jobs';
-import { JobDetail } from './feature/jobs/job-detail/job-detail';
 
 describe('application routes', () => {
   afterEach(() => sessionStorage.clear());
 
-  it('redirects an anonymous detail visitor to login before making a search request', async () => {
+  it('redirects an anonymous search visitor before making a request', async () => {
     TestBed.configureTestingModule({
       providers: [
         provideRouter(routes),
@@ -25,37 +24,13 @@ describe('application routes', () => {
     });
     sessionStorage.clear();
     const harness = await RouterTestingHarness.create();
-    await harness.navigateByUrl('/jobs/ext-1?title=Java');
+    await harness.navigateByUrl('/jobs?title=Java');
     expect(TestBed.inject(Router).url).toBe('/login');
     const http = TestBed.inject(HttpTestingController);
     http.expectNone(() => true);
     http.verify();
   });
 
-  it('allows an authenticated user to open the external detail route', async () => {
-    TestBed.configureTestingModule({
-      providers: [
-        provideRouter(routes),
-        provideHttpClient(),
-        provideHttpClientTesting(),
-        { provide: BASE_PATH, useValue: '/api' },
-      ],
-    });
-    sessionStorage.setItem('access_token', 'valid-token');
-    const harness = await RouterTestingHarness.create();
-    await harness.navigateByUrl('/jobs/ext-1?title=Java', JobDetail);
-    const http = TestBed.inject(HttpTestingController);
-    http
-      .expectOne((req) => req.url === '/api/job-offers')
-      .flush({
-        content: [],
-        page: 1,
-        size: 20,
-        totalElements: 0,
-        totalPages: 0,
-      });
-    http.verify();
-  });
   it('should use the protected jobs page as the default destination', async () => {
     const rootRoute = routes.find((route) => route.path === '');
     const loginRoute = routes.find((route) => route.path === 'login');
@@ -111,5 +86,11 @@ describe('application routes', () => {
     const http = TestBed.inject(HttpTestingController);
     http.expectOne((req) => req.url === '/api/jobs').flush({ content: [], page: 0, totalPages: 0 });
     http.verify();
+  });
+
+  it('keeps details inside the smart pages instead of exposing detail routes', () => {
+    expect(
+      routes.some((route) => route.path === 'jobs/:externalId' || route.path === 'saved-jobs/:id'),
+    ).toBe(false);
   });
 });

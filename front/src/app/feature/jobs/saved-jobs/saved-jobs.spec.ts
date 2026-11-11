@@ -1,6 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { By } from '@angular/platform-browser';
 import { BASE_PATH, JobDto, JobStatus } from '../../../generated';
 import { SavedJobs } from './saved-jobs';
@@ -18,9 +19,23 @@ describe('Saved jobs board', () => {
   };
 
   beforeEach(async () => {
+    Object.defineProperty(HTMLDialogElement.prototype, 'showModal', {
+      configurable: true,
+      value() {
+        this.setAttribute('open', '');
+      },
+    });
+    Object.defineProperty(HTMLDialogElement.prototype, 'close', {
+      configurable: true,
+      value() {
+        this.removeAttribute('open');
+        this.dispatchEvent(new Event('close'));
+      },
+    });
     await TestBed.configureTestingModule({
       imports: [SavedJobs],
       providers: [
+        provideRouter([]),
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: BASE_PATH, useValue: '/api' },
@@ -131,5 +146,67 @@ describe('Saved jobs board', () => {
     const request = http.expectOne((req) => req.url === '/api/jobs');
     fixture.destroy();
     expect(request.cancelled).toBe(true);
+  });
+
+  it('opens the selected job in a modal and saves status changes on the board', () => {
+    http
+      .expectOne((req) => req.url === '/api/jobs')
+      .flush({ content: [offer], page: 0, totalPages: 1 });
+    fixture.detectChanges();
+    fixture.nativeElement.querySelector('.job-card h3 button').click();
+    fixture.detectChanges();
+    const dialog = fixture.nativeElement.querySelector('dialog') as HTMLDialogElement;
+    expect(dialog.open).toBe(true);
+    expect(dialog.querySelector('app-job-detail')!.textContent).toContain('Java Engineer');
+    http.expectNone(() => true);
+    const select = dialog.querySelector('select')!;
+    select.value = 'APPLIED';
+    select.dispatchEvent(new Event('change'));
+    const update = http.expectOne('/api/jobs/1/status');
+    expect(update.request.body).toEqual({ status: 'APPLIED' });
+    select.dispatchEvent(new Event('change'));
+    http.expectNone('/api/jobs/1/status');
+    fixture.detectChanges();
+    expect(select.disabled).toBe(true);
+    update.flush({ ...offer, status: JobStatus.Applied });
+    fixture.detectChanges();
+    expect(select.value).toBe('APPLIED');
+    expect(fixture.nativeElement.querySelector('[data-status="APPLIED"]').textContent).toContain(
+      'Java Engineer',
+    );
+    dialog.querySelector<HTMLButtonElement>('.close-detail')!.click();
+    fixture.detectChanges();
+    expect(dialog.open).toBe(false);
+  });
+  it('restores the modal status on error and keeps it usable after closing and reopening', () => {
+    http
+      .expectOne((req) => req.url === '/api/jobs')
+      .flush({ content: [offer], page: 0, totalPages: 1 });
+    fixture.detectChanges();
+    fixture.nativeElement.querySelector('.job-card h3 button').click();
+    fixture.detectChanges();
+    const dialog = fixture.nativeElement.querySelector('dialog') as HTMLDialogElement;
+    const select = dialog.querySelector('select')!;
+    select.value = 'DONE';
+    select.dispatchEvent(new Event('change'));
+    http
+      .expectOne('/api/jobs/1/status')
+      .flush({ message: 'private' }, { status: 500, statusText: 'Error' });
+    fixture.detectChanges();
+    expect(select.value).toBe('TO_PROCESS');
+    expect(select.disabled).toBe(false);
+    expect(dialog.querySelector('[role="alert"]')!.textContent).toContain('Impossible');
+    expect(dialog.textContent).not.toContain('private');
+    dialog.close();
+    fixture.detectChanges();
+    expect(dialog.querySelector('app-job-detail')).toBeNull();
+    fixture.nativeElement.querySelector('.job-card h3 button').click();
+    fixture.detectChanges();
+    const retry = dialog.querySelector('select')!;
+    retry.value = 'DONE';
+    retry.dispatchEvent(new Event('change'));
+    http.expectOne('/api/jobs/1/status').flush({ ...offer, status: JobStatus.Done });
+    fixture.detectChanges();
+    expect(retry.value).toBe('DONE');
   });
 });

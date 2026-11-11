@@ -19,6 +19,10 @@ The API requires `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, `SPRING_
 
 Use four-space indentation for Java and two spaces for TypeScript, HTML, SCSS, and YAML. Frontend files follow Angular kebab-case conventions (`auth-service.ts`, `login.spec.ts`); classes and Java types use PascalCase, while methods and variables use camelCase. Keep controllers thin, business rules in services, persistence in repositories, and conversions in MapStruct mappers. Frontend formatting follows `front/.editorconfig` and Prettier; TypeScript uses single quotes.
 
+### Angular Smart and Dumb Components
+
+Separate smart pages from dumb presentation components. Smart pages handle routing, service calls, and workflow state. Dumb components receive data through inputs and emit user interactions through outputs; they must not inject services or depend on routing or HTTP. Keep offer display in a dumb `JobDetail` component that receives a job as input; loading, saving, and status updates belong in the smart pages.
+
 ## Agent Implementation Workflow
 
 Agents may implement code only in small, explicitly user-approved slices. Before editing, restate the intended outcome, list the files expected to change, including any generated artifacts, and state what is outside scope. Wait for approval. If the scope or file list must change, stop and seek renewed approval. Do not prepare or implement later slices.

@@ -45,15 +45,16 @@
       }
       @for (offer of response.content; track $index) {
         <article class="offer-card">
-          @let saveState = saveStates().get(offer.externalId);
           <div class="offer-content">
             <h2>
-              <a
-                [routerLink]="['/jobs', offer.externalId]"
-                [queryParams]="detailQueryParams"
-                [state]="{ offer }"
-                >{{ offer.title }}</a
+              <button
+                type="button"
+                class="detail-trigger"
+                #opener
+                (click)="openDetail(offer, detailDialog, opener)"
               >
+                {{ offer.title }}
+              </button>
             </h2>
             <p>{{ offer.company }} · {{ offer.location }}</p>
             @if (offer.description) {
@@ -61,39 +62,10 @@
             }
           </div>
           <div class="offer-save">
-            <button
-              type="button"
-              class="bookmark-button"
-              [attr.aria-label]="
-                saveState === 'removing'
-                  ? 'Retrait en cours : ' + offer.title
-                  : saveState === 'saved' ||
-                      saveState === 'duplicate' ||
-                      saveState === 'remove-error'
-                    ? 'Retirer des offres sauvegardées : ' + offer.title
-                    : saveState === 'saving'
-                      ? 'Sauvegarde en cours : ' + offer.title
-                      : 'Sauvegarder ' + offer.title
-              "
-              [attr.aria-pressed]="
-                saveState === 'saved' ||
-                saveState === 'duplicate' ||
-                saveState === 'removing' ||
-                saveState === 'remove-error'
-              "
-              [attr.aria-busy]="saveState === 'saving' || saveState === 'removing'"
-              [disabled]="saveState === 'saving' || saveState === 'removing'"
-              (click)="toggle(offer)"
-            >
-              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                <path d="M6 3h12v18l-6-4-6 4V3Z" />
-              </svg>
-            </button>
-            @if (saveStates().get(offer.externalId) === 'error') {
-              <p role="alert">Impossible de sauvegarder cette offre. Réessayez.</p>
-            } @else if (saveState === 'remove-error') {
-              <p role="alert">Impossible de retirer cette offre. Réessayez.</p>
-            }
+            <ng-container
+              [ngTemplateOutlet]="saveAction"
+              [ngTemplateOutletContext]="{ $implicit: offer }"
+            />
           </div>
         </article>
       }
@@ -120,3 +92,65 @@
     }
   </section>
 </section>
+
+<dialog
+  #detailDialog
+  class="detail-dialog"
+  [attr.aria-label]="selectedJob()?.title ?? 'Détail de l’offre'"
+  (close)="closeDetail()"
+>
+  <button
+    type="button"
+    class="close-detail"
+    aria-label="Fermer le détail"
+    autofocus
+    (click)="detailDialog.close()"
+  >
+    <span aria-hidden="true">×</span>
+  </button>
+  @if (selectedJob(); as job) {
+    <app-job-detail [job]="job">
+      <div job-actions class="modal-actions">
+        <ng-container
+          [ngTemplateOutlet]="saveAction"
+          [ngTemplateOutletContext]="{ $implicit: job }"
+        />
+      </div>
+    </app-job-detail>
+  }
+</dialog>
+
+<ng-template #saveAction let-offer>
+  @let saveState = saveStates().get(offer.externalId);
+  <button
+    type="button"
+    class="bookmark-button"
+    [attr.aria-label]="
+      saveState === 'removing'
+        ? 'Retrait en cours : ' + offer.title
+        : saveState === 'saved' || saveState === 'duplicate' || saveState === 'remove-error'
+          ? 'Retirer des offres sauvegardées : ' + offer.title
+          : saveState === 'saving'
+            ? 'Sauvegarde en cours : ' + offer.title
+            : 'Sauvegarder ' + offer.title
+    "
+    [attr.aria-pressed]="
+      saveState === 'saved' ||
+      saveState === 'duplicate' ||
+      saveState === 'removing' ||
+      saveState === 'remove-error'
+    "
+    [attr.aria-busy]="saveState === 'saving' || saveState === 'removing'"
+    [disabled]="saveState === 'saving' || saveState === 'removing'"
+    (click)="toggle(offer)"
+  >
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M6 3h12v18l-6-4-6 4V3Z" />
+    </svg>
+  </button>
+  @if (saveStates().get(offer.externalId) === 'error') {
+    <p role="alert">Impossible de sauvegarder cette offre. Réessayez.</p>
+  } @else if (saveState === 'remove-error') {
+    <p role="alert">Impossible de retirer cette offre. Réessayez.</p>
+  }
+</ng-template>

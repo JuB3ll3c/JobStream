@@ -1,6 +1,5 @@
 <nav class="navbar" aria-label="Main navigation">
   <span class="navbar__brand">JobStream</span>
-  @if (isAuthenticated()) {
     <div class="navbar__links">
       <a
         routerLink="/jobs"
@@ -14,5 +13,4 @@
       >
     </div>
     <button class="navbar__logout" type="button" (click)="logout()">Logout</button>
-  }
 </nav>

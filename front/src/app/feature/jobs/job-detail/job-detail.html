@@ -1,107 +1,55 @@
-<section class="detail-page" [attr.aria-busy]="loading()">
-  <a routerLink="/jobs" [queryParams]="searchQueryParams" data-testid="back-to-search"
-    >Retour à la recherche</a
-  >
-  @if (!offer()) {
-    <h1>Détail de l’offre</h1>
-  }
-  @if (loading()) {
-    <p role="status">Chargement de l’offre…</p>
-  } @else if (error()) {
-    <p role="alert">{{ error() }}</p>
-  }
-  @if (offer(); as job) {
-    <article class="detail-card">
-      @let saveState = saveStates().get(job.externalId);
-      <header class="detail-header">
-        <div>
-          <h1>{{ job.title }}</h1>
-          <p>{{ job.company }} · {{ job.location }}</p>
-        </div>
-        <button
-          type="button"
-          class="bookmark-button"
-          [attr.aria-label]="
-            saveState === 'removing'
-              ? 'Retrait en cours : ' + job.title
-              : saveState === 'saved' || saveState === 'duplicate' || saveState === 'remove-error'
-                ? 'Retirer des offres sauvegardées : ' + job.title
-                : saveState === 'saving'
-                  ? 'Sauvegarde en cours : ' + job.title
-                  : 'Sauvegarder ' + job.title
-          "
-          [attr.aria-pressed]="
-            saveState === 'saved' ||
-            saveState === 'duplicate' ||
-            saveState === 'removing' ||
-            saveState === 'remove-error'
-          "
-          [attr.aria-busy]="saveState === 'saving' || saveState === 'removing'"
-          [disabled]="saveState === 'saving' || saveState === 'removing'"
-          (click)="toggle(job)"
-        >
-          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-            <path d="M6 3h12v18l-6-4-6 4V3Z" />
-          </svg>
-        </button>
-      </header>
-      <div class="save-feedback">
-        @if (saveState === 'remove-error') {
-          <p role="alert">Impossible de retirer cette offre. Réessayez.</p>
-        } @else if (saveState === 'error') {
-          <p role="alert">Impossible de sauvegarder cette offre. Réessayez.</p>
-        }
+@let offer = job();
+<article class="detail-card">
+  <header>
+    <h2>{{ offer.title }}</h2>
+    <p>{{ offer.company }} · {{ offer.location }}</p>
+  </header>
+  <ng-content select="[job-actions]" />
+  <dl>
+    @if (offer.postedDate) {
+      <div>
+        <dt>Date de publication</dt>
+        <dd>{{ offer.postedDate | date: 'dd/MM/yyyy' }}</dd>
       </div>
-      <dl>
-        @if (job.postedDate) {
-          <div>
-            <dt>Date de publication</dt>
-            <dd>{{ job.postedDate | date: 'dd/MM/yyyy' }}</dd>
-          </div>
+    }
+    @if (offer.contractType) {
+      <div>
+        <dt>Type de contrat</dt>
+        <dd>{{ offer.contractType }}</dd>
+      </div>
+    }
+    @if (offer.salaryMin != null) {
+      <div>
+        <dt>Salaire minimum</dt>
+        <dd>{{ offer.salaryMin }}</dd>
+      </div>
+    }
+    @if (offer.salaryMax != null) {
+      <div>
+        <dt>Salaire maximum</dt>
+        <dd>{{ offer.salaryMax }}</dd>
+      </div>
+    }
+  </dl>
+  <section aria-labelledby="description-heading">
+    <h2 id="description-heading">Description</h2>
+    @if (offer.description) {
+      <p class="description">{{ offer.description }}</p>
+    } @else {
+      <p>Aucune description disponible.</p>
+    }
+  </section>
+  @if (offer.requirements?.length) {
+    <section aria-labelledby="requirements-heading">
+      <h2 id="requirements-heading">Informations complémentaires</h2>
+      <ul>
+        @for (requirement of offer.requirements; track $index) {
+          <li>{{ requirement }}</li>
         }
-        @if (job.contractType) {
-          <div>
-            <dt>Type de contrat</dt>
-            <dd>{{ job.contractType }}</dd>
-          </div>
-        }
-        @if (job.salaryMin != null) {
-          <div>
-            <dt>Salaire minimum</dt>
-            <dd>{{ job.salaryMin }}</dd>
-          </div>
-        }
-        @if (job.salaryMax != null) {
-          <div>
-            <dt>Salaire maximum</dt>
-            <dd>{{ job.salaryMax }}</dd>
-          </div>
-        }
-      </dl>
-      <section aria-labelledby="description-heading">
-        <h2 id="description-heading">Description disponible</h2>
-        <p class="description-note">La description peut être un extrait de l’annonce originale.</p>
-        @if (job.description) {
-          <p class="description">{{ job.description }}</p>
-        } @else {
-          <p>Aucune description disponible.</p>
-        }
-      </section>
-      @if (job.requirements?.length) {
-        <section aria-labelledby="requirements-heading">
-          <h2 id="requirements-heading">Informations complémentaires</h2>
-          <ul>
-            @for (requirement of job.requirements; track $index) {
-              <li>{{ requirement }}</li>
-            }
-          </ul>
-        </section>
-      }
-      @if (job.jobUrl) {
-        <a [href]="job.jobUrl" target="_blank" rel="noopener noreferrer"
-          >Voir l’annonce originale</a
-        >
-      }
-    </article>
+      </ul>
+    </section>
   }
-</section>
+  @if (offer.jobUrl) {
+    <a [href]="offer.jobUrl" target="_blank" rel="noopener noreferrer">Voir l’annonce originale</a>
+  }
+</article>
