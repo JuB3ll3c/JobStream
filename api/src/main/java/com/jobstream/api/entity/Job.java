@@ -11,7 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(uniqueConstraints = @UniqueConstraint(name = "uk_job_user_external_id", columnNames = {"user_id", "external_id"}))
+@Table(name = "job")
 @Getter
 @Setter
 public class Job extends BaseEntity{
@@ -50,6 +50,6 @@ public class Job extends BaseEntity{
     private List<String> requirements = new ArrayList<>();
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "user_id", nullable = false, foreignKey = @ForeignKey(name = "fk_job_user"))
+    @JoinColumn(name = "user_id", nullable = false)
     private User user;
 }
