@@ -111,7 +111,7 @@
     class="removal-confirmation"
     aria-labelledby="removal-heading"
     aria-describedby="removal-description"
-    (cancel)="removing() && $event.preventDefault()"
+    (cancel)="removing() ? $event.preventDefault() : null"
     (close)="confirmingRemoval.set(false); removalError.set(null)"
   >
     @if (selectedJob(); as job) {

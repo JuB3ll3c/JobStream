@@ -5,7 +5,15 @@ import {
   CdkDropList,
   CdkDropListGroup,
 } from '@angular/cdk/drag-drop';
-import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import {
+  Component,
+  DestroyRef,
+  Injector,
+  afterNextRender,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { EMPTY, Subject, catchError, expand, finalize, reduce, startWith, switchMap } from 'rxjs';
 import { JobDetail } from '../job-detail/job-detail';
@@ -20,6 +28,7 @@ import { JobDto, JobService, JobStatus } from '../../../generated';
 export class SavedJobs {
   private readonly api = inject(JobService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly injector = inject(Injector);
   private readonly reload = new Subject<void>();
   readonly columns = [
     { status: JobStatus.ToProcess, label: 'À traiter' },
@@ -81,10 +90,16 @@ export class SavedJobs {
     this.confirmingRemoval.set(false);
     this.removalError.set(null);
     this.selectedId.set(null);
-    const opener = this.jobs().some((job) => job.id === id)
-      ? board.querySelector<HTMLButtonElement>('[data-job-id="' + id + '"]')
-      : null;
-    (opener ?? heading).focus();
+    afterNextRender(
+      () => {
+        if (!board.isConnected) return;
+        const opener = this.jobs().some((job) => job.id === id)
+          ? board.querySelector<HTMLButtonElement>('[data-job-id="' + id + '"]')
+          : null;
+        (opener ?? heading).focus();
+      },
+      { injector: this.injector },
+    );
   }
 
   selectStatus(select: HTMLSelectElement, job: JobDto): void {

@@ -4,7 +4,7 @@
   class="detail-dialog"
   [attr.aria-label]="offer.title"
   (close)="onClose()"
-  (cancel)="closeDisabled() && $event.preventDefault()"
+  (cancel)="closeDisabled() ? $event.preventDefault() : null"
 >
   <button
     type="button"
