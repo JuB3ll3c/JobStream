@@ -2,6 +2,8 @@ package com.jobstream.api.service;
 
 import com.jobstream.api.entity.UserCv;
 import com.jobstream.api.exception.CvValidationException;
+import com.jobstream.api.exception.ResourceNotFoundException;
+import com.jobstream.dto.CvMetadataDto;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import com.jobstream.api.mapper.CvMapper;
@@ -23,6 +25,13 @@ public class CvService {
     private final UserCvRepository cvRepository;
     private final UserRepository userRepository;
     private final CvMapper cvMapper;
+
+    @Transactional(readOnly = true)
+    public CvMetadataDto getCvMetadata(Long userId) {
+        UserCv cv = cvRepository.findByUserId(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("CV not found"));
+        return cvMapper.toDto(cv);
+    }
 
     @Transactional
     public CvUploadResult uploadCv(Long userId, MultipartFile file) {

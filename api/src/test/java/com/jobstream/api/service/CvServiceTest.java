@@ -3,6 +3,7 @@ package com.jobstream.api.service;
 import com.jobstream.api.config.TestContainerConfig;
 import com.jobstream.api.entity.Role;
 import com.jobstream.api.exception.CvValidationException;
+import com.jobstream.api.exception.ResourceNotFoundException;
 import com.jobstream.api.entity.User;
 import com.jobstream.api.repository.UserCvRepository;
 import com.jobstream.api.repository.UserRepository;
@@ -70,6 +71,24 @@ class CvServiceTest {
             document.save(output);
             return output.toByteArray();
         }
+    }
+
+    @Test
+    void getMetadata_shouldReturnTheCurrentCvMetadata() throws IOException {
+        cvService.uploadCv(alice.getId(),
+                new MockMultipartFile("file", "first.pdf", "application/pdf", pdf("First")));
+        var replacement = cvService.uploadCv(alice.getId(),
+                new MockMultipartFile("file", "current.pdf", "application/pdf", pdf("Current")));
+
+        var metadata = cvService.getCvMetadata(alice.getId());
+
+        assertThat(metadata).isEqualTo(replacement.metadata());
+    }
+
+    @Test
+    void getMetadata_shouldThrowNotFoundWhenThereIsNoCv() {
+        assertThatThrownBy(() -> cvService.getCvMetadata(alice.getId()))
+                .isInstanceOf(ResourceNotFoundException.class);
     }
 
     @Test

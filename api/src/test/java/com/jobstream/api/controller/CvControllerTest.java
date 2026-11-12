@@ -150,9 +150,59 @@ class CvControllerTest {
     }
 
     @Test
-    void otherOperations_shouldReturnNotImplemented() throws Exception {
+    void getMetadata_shouldReturnTheCurrentCvMetadataOnly() throws Exception {
+        mockMvc.perform(multipart("/me/cv").file(pdf()).with(request -> {
+            request.setMethod("PUT");
+            return request;
+        }).header("Authorization", "Bearer " + token)).andExpect(status().isCreated());
+        var replacement = mockMvc.perform(multipart("/me/cv").file(pdf()).with(request -> {
+            request.setMethod("PUT");
+            return request;
+        }).header("Authorization", "Bearer " + token)).andExpect(status().isOk()).andReturn();
+
         mockMvc.perform(get("/me/cv").header("Authorization", "Bearer " + token))
-                .andExpect(status().isNotImplemented());
+                .andExpect(status().isOk())
+                .andExpect(content().json(replacement.getResponse().getContentAsString()))
+                .andExpect(jsonPath("$.version").value(2))
+                .andExpect(jsonPath("$.content").doesNotExist())
+                .andExpect(jsonPath("$.text").doesNotExist());
+    }
+
+    @Test
+    void getMetadata_shouldReturnNotFoundWhenThereIsNoCv() throws Exception {
+        mockMvc.perform(get("/me/cv").header("Authorization", "Bearer " + token))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404))
+                .andExpect(jsonPath("$.error").value("Resource not found"))
+                .andExpect(jsonPath("$.message").value("CV not found"));
+    }
+
+    @Test
+    void getMetadata_shouldRequireAuthentication() throws Exception {
+        mockMvc.perform(get("/me/cv")).andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void getMetadata_shouldNotReturnAnotherUsersCv() throws Exception {
+        mockMvc.perform(multipart("/me/cv").file(pdf()).with(request -> {
+            request.setMethod("PUT");
+            return request;
+        }).header("Authorization", "Bearer " + token)).andExpect(status().isCreated());
+        User bob = new User();
+        bob.setEmail("cv-metadata-bob@example.com");
+        bob.setPassword("unused");
+        bob.setRole(Role.USER);
+        String bobToken = jwtService.generateToken(userRepository.saveAndFlush(bob));
+
+        mockMvc.perform(get("/me/cv").param("userId",
+                        userRepository.findByEmail("cv-controller@example.com").orElseThrow().getId().toString())
+                .header("Authorization", "Bearer " + bobToken))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404));
+    }
+
+    @Test
+    void otherOperations_shouldReturnNotImplemented() throws Exception {
         mockMvc.perform(get("/me/cv/file").header("Authorization", "Bearer " + token))
                 .andExpect(status().isNotImplemented());
         mockMvc.perform(delete("/me/cv").header("Authorization", "Bearer " + token))

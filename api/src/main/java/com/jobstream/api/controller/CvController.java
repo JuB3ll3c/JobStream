@@ -30,7 +30,7 @@ public class CvController implements CvApi {
 
     @Override
     public ResponseEntity<CvMetadataDto> getCvMetadata(@AuthenticationPrincipal User user) {
-        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
+        return ResponseEntity.ok(cvService.getCvMetadata(user.getId()));
     }
 
     @Override

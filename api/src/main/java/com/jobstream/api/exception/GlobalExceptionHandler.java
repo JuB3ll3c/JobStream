@@ -139,7 +139,7 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleNotFound(ResourceNotFoundException ex) {
-        return build(HttpStatus.NOT_FOUND, "Job not found", ex.getMessage());
+        return build(HttpStatus.NOT_FOUND, "Resource not found", ex.getMessage());
     }
 
     /**
