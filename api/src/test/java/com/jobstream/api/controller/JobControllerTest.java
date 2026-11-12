@@ -180,7 +180,7 @@ class JobControllerTest {
                             .param("userId", bob.getId().toString()))
                     .andExpect(status().isNotFound())
                     .andExpect(jsonPath("$.status").value(404))
-                    .andExpect(jsonPath("$.error").value("Job not found"));
+                    .andExpect(jsonPath("$.error").value("Resource not found"));
         }
     }
 
@@ -201,7 +201,7 @@ class JobControllerTest {
             mockMvc.perform(asAlice(get("/jobs/" + id)))
                     .andExpect(status().isNotFound())
                     .andExpect(jsonPath("$.status").value(404))
-                    .andExpect(jsonPath("$.error").value("Job not found"));
+                    .andExpect(jsonPath("$.error").value("Resource not found"));
         }
     }
 
