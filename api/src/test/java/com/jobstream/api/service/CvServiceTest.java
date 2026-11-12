@@ -74,6 +74,26 @@ class CvServiceTest {
     }
 
     @Test
+    void getFile_shouldReturnTheCurrentPdfBytesAndFilename() throws IOException {
+        cvService.uploadCv(alice.getId(),
+                new MockMultipartFile("file", "first.pdf", "application/pdf", pdf("First")));
+        byte[] current = pdf("Current");
+        cvService.uploadCv(alice.getId(),
+                new MockMultipartFile("file", "current.pdf", "application/pdf", current));
+
+        var file = cvService.getCvFile(alice.getId());
+
+        assertThat(file.getContent()).containsExactly(current);
+        assertThat(file.getOriginalFilename()).isEqualTo("current.pdf");
+    }
+
+    @Test
+    void getFile_shouldThrowNotFoundWhenThereIsNoCv() {
+        assertThatThrownBy(() -> cvService.getCvFile(alice.getId()))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
     void getMetadata_shouldReturnTheCurrentCvMetadata() throws IOException {
         cvService.uploadCv(alice.getId(),
                 new MockMultipartFile("file", "first.pdf", "application/pdf", pdf("First")));

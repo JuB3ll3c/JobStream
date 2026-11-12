@@ -14,6 +14,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.ContentDisposition;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.web.FilterChainProxy;
 import org.springframework.test.context.ActiveProfiles;
@@ -24,6 +25,7 @@ import org.springframework.web.context.WebApplicationContext;
 
 import java.io.ByteArrayOutputStream;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -202,10 +204,64 @@ class CvControllerTest {
     }
 
     @Test
-    void otherOperations_shouldReturnNotImplemented() throws Exception {
-        mockMvc.perform(get("/me/cv/file").header("Authorization", "Bearer " + token))
-                .andExpect(status().isNotImplemented());
+    void delete_shouldReturnNotImplemented() throws Exception {
         mockMvc.perform(delete("/me/cv").header("Authorization", "Bearer " + token))
                 .andExpect(status().isNotImplemented());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"cv.pdf", "CV été \"2026\".pdf"})
+    void download_shouldReturnTheOriginalPdfWithAnEncodedAttachmentFilename(String filename) throws Exception {
+        var original = pdf();
+        var file = new MockMultipartFile("file", filename, "application/pdf", original.getBytes());
+        mockMvc.perform(multipart("/me/cv").file(file).with(request -> {
+            request.setMethod("PUT");
+            return request;
+        }).header("Authorization", "Bearer " + token)).andExpect(status().isCreated());
+
+        var response = mockMvc.perform(get("/me/cv/file").header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType("application/pdf"))
+                .andExpect(content().bytes(original.getBytes()))
+                .andReturn().getResponse();
+        String header = response.getHeader("Content-Disposition");
+        assertThat(header).contains("filename*=UTF-8''");
+        var disposition = ContentDisposition.parse(header);
+        assertThat(disposition.getType()).isEqualTo("attachment");
+        assertThat(disposition.getFilename()).isEqualTo(filename);
+    }
+
+    @Test
+    void download_shouldReturnNotFoundWhenThereIsNoCv() throws Exception {
+        mockMvc.perform(get("/me/cv/file").accept("application/pdf", "application/json")
+                .header("Authorization", "Bearer " + token))
+                .andExpect(status().isNotFound())
+                .andExpect(content().contentTypeCompatibleWith("application/json"))
+                .andExpect(jsonPath("$.status").value(404))
+                .andExpect(jsonPath("$.message").value("CV not found"));
+    }
+
+    @Test
+    void download_shouldRequireAuthentication() throws Exception {
+        mockMvc.perform(get("/me/cv/file")).andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void download_shouldNotReturnAnotherUsersCv() throws Exception {
+        mockMvc.perform(multipart("/me/cv").file(pdf()).with(request -> {
+            request.setMethod("PUT");
+            return request;
+        }).header("Authorization", "Bearer " + token)).andExpect(status().isCreated());
+        User bob = new User();
+        bob.setEmail("cv-download-bob@example.com");
+        bob.setPassword("unused");
+        bob.setRole(Role.USER);
+        String bobToken = jwtService.generateToken(userRepository.saveAndFlush(bob));
+
+        mockMvc.perform(get("/me/cv/file").param("userId",
+                        userRepository.findByEmail("cv-controller@example.com").orElseThrow().getId().toString())
+                .header("Authorization", "Bearer " + bobToken))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404));
     }
 }

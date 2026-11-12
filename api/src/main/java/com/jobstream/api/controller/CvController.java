@@ -6,12 +6,18 @@ import com.jobstream.dto.CvMetadataDto;
 import com.jobstream.endpoint.CvApi;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+
+import java.nio.charset.StandardCharsets;
 
 @RestController
 @RequiredArgsConstructor
@@ -35,7 +41,12 @@ public class CvController implements CvApi {
 
     @Override
     public ResponseEntity<Resource> downloadCv(@AuthenticationPrincipal User user) {
-        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
+        var file = cvService.getCvFile(user.getId());
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_PDF)
+                .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.attachment()
+                        .filename(file.getOriginalFilename(), StandardCharsets.UTF_8).build().toString())
+                .body(new ByteArrayResource(file.getContent()));
     }
 
     @Override

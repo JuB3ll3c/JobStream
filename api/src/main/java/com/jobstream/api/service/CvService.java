@@ -27,6 +27,12 @@ public class CvService {
     private final CvMapper cvMapper;
 
     @Transactional(readOnly = true)
+    public UserCv getCvFile(Long userId) {
+        return cvRepository.findByUserId(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("CV not found"));
+    }
+
+    @Transactional(readOnly = true)
     public CvMetadataDto getCvMetadata(Long userId) {
         UserCv cv = cvRepository.findByUserId(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("CV not found"));
