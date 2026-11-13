@@ -1,5 +1,5 @@
 <main class="cv-page">
-  <h1>Mon CV</h1>
+  <h1 #cvHeading tabindex="-1">Mon CV</h1>
   @if (loading()) {
     <p role="status">Chargement du CV…</p>
   } @else if (loadError(); as error) {
@@ -19,15 +19,25 @@
           <dd>{{ cv.uploadedAt | date: 'dd/MM/yyyy HH:mm' }}</dd>
         </div>
       </dl>
-      <button
-        class="cv-download"
-        type="button"
-        [disabled]="downloading() || saving()"
-        [attr.aria-busy]="downloading()"
-        (click)="download()"
-      >
-        {{ downloading() ? 'Téléchargement en cours…' : 'Télécharger mon CV' }}
-      </button>
+      <div class="cv-actions">
+        <button
+          class="cv-download"
+          type="button"
+          [disabled]="downloading() || saving() || removing()"
+          [attr.aria-busy]="downloading()"
+          (click)="download()"
+        >
+          {{ downloading() ? 'Téléchargement en cours…' : 'Télécharger mon CV' }}
+        </button>
+        <button
+          class="cv-delete"
+          type="button"
+          [disabled]="saving() || downloading() || removing()"
+          (click)="requestRemoval(removalDialog)"
+        >
+          Supprimer mon CV
+        </button>
+      </div>
       @if (downloadError(); as error) {
         <p role="alert">{{ error }}</p>
       }
@@ -48,7 +58,7 @@
           accept="application/pdf,.pdf"
           [attr.aria-describedby]="uploadError() ? 'cv-file-help cv-upload-error' : 'cv-file-help'"
           [attr.aria-invalid]="!!uploadError()"
-          [disabled]="saving()"
+          [disabled]="saving() || removing()"
           (change)="selectFile(fileInput)"
         />
         @if (uploadError(); as error) {
@@ -57,10 +67,46 @@
         @if (success()) {
           <p role="status">CV enregistré.</p>
         }
-        <button type="submit" [disabled]="!selectedFile() || saving()">
+        <button type="submit" [disabled]="!selectedFile() || saving() || removing()">
           {{ saving() ? 'Envoi en cours…' : metadata() ? 'Remplacer le CV' : 'Importer le CV' }}
         </button>
       </form>
     </section>
   }
+  <dialog
+    #removalDialog
+    class="removal-confirmation"
+    aria-labelledby="removal-heading"
+    aria-describedby="removal-description"
+    (cancel)="removing() ? $event.preventDefault() : null"
+    (close)="confirmingRemoval.set(false); removalError.set(null)"
+  >
+    <h2 id="removal-heading">Supprimer votre CV ?</h2>
+    <p id="removal-description">Le fichier « {{ metadata()?.originalFilename }} » sera supprimé.</p>
+    <div class="removal-buttons">
+      <button
+        class="cancel-removal"
+        type="button"
+        autofocus
+        [disabled]="removing()"
+        (click)="removalDialog.close()"
+      >
+        Annuler
+      </button>
+      <button
+        class="confirm-removal"
+        type="button"
+        [disabled]="removing()"
+        (click)="confirmRemoval(removalDialog, cvHeading)"
+      >
+        Supprimer
+      </button>
+    </div>
+    @if (removing()) {
+      <p role="status">Suppression en cours…</p>
+    }
+    @if (removalError(); as error) {
+      <p role="alert">{{ error }}</p>
+    }
+  </dialog>
 </main>

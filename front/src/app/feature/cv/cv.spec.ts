@@ -15,6 +15,19 @@ describe('Cv page', () => {
   };
 
   beforeEach(async () => {
+    Object.defineProperty(HTMLDialogElement.prototype, 'showModal', {
+      configurable: true,
+      value() {
+        this.setAttribute('open', '');
+      },
+    });
+    Object.defineProperty(HTMLDialogElement.prototype, 'close', {
+      configurable: true,
+      value() {
+        this.removeAttribute('open');
+        this.dispatchEvent(new Event('close'));
+      },
+    });
     await TestBed.configureTestingModule({
       imports: [Cv],
       providers: [
@@ -32,6 +45,25 @@ describe('Cv page', () => {
     http.verify();
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
+  });
+
+  it('asks for confirmation and allows cancelling without sending a delete request', () => {
+    http.expectOne('/api/me/cv').flush(current);
+    fixture.detectChanges();
+    const button: HTMLButtonElement = fixture.nativeElement.querySelector('.cv-delete');
+    expect(button).not.toBeNull();
+    button.click();
+    fixture.detectChanges();
+    const dialog: HTMLDialogElement = fixture.nativeElement.querySelector('dialog');
+    expect(dialog.open).toBe(true);
+    expect(button.disabled).toBe(false);
+    expect(dialog.textContent).toContain('mon-cv.pdf');
+    http.expectNone('/api/me/cv');
+    dialog.querySelector<HTMLButtonElement>('.cancel-removal')!.click();
+    fixture.detectChanges();
+    expect(dialog.open).toBe(false);
+    http.expectNone('/api/me/cv');
+    expect(fixture.nativeElement.textContent).toContain('mon-cv.pdf');
   });
 
   function browserDownload() {
@@ -53,6 +85,88 @@ describe('Cv page', () => {
     });
     return { create, revoke, links };
   }
+
+  it('deletes only after confirmation, prevents duplicate requests and returns to the empty state', () => {
+    http.expectOne('/api/me/cv').flush(current);
+    fixture.detectChanges();
+    selectFile(new File(['pdf'], 'replacement.pdf', { type: 'application/pdf' }));
+    fixture.nativeElement.querySelector('.cv-delete').click();
+    fixture.detectChanges();
+    const dialog: HTMLDialogElement = fixture.nativeElement.querySelector('dialog');
+    const confirm = dialog.querySelector<HTMLButtonElement>('.confirm-removal')!;
+    confirm.click();
+    confirm.click();
+    fixture.detectChanges();
+    const request = http.expectOne('/api/me/cv');
+    expect(request.request.method).toBe('DELETE');
+    expect(confirm.disabled).toBe(true);
+    expect(dialog.querySelector<HTMLButtonElement>('.cancel-removal')!.disabled).toBe(true);
+    expect(dialog.textContent).toContain('Suppression en cours');
+    const escape = new Event('cancel', { cancelable: true });
+    dialog.dispatchEvent(escape);
+    expect(escape.defaultPrevented).toBe(true);
+    request.flush(null, { status: 204, statusText: 'No Content' });
+    fixture.detectChanges();
+    expect(dialog.open).toBe(false);
+    expect(fixture.nativeElement.textContent).toContain('Aucun CV importé');
+    expect(fixture.nativeElement.querySelector('.cv-delete')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.cv-download')).toBeNull();
+    expect(fixture.nativeElement.querySelector('button[type="submit"]').disabled).toBe(true);
+    expect(fixture.nativeElement.querySelector('input[type="file"]').value).toBe('');
+    expect(document.activeElement).toBe(fixture.nativeElement.querySelector('h1'));
+  });
+
+  it.each([
+    [404, 'plus disponible'],
+    [500, 'Réessayez'],
+  ])('keeps the CV and confirmation available after a deletion error %s', (status, message) => {
+    http.expectOne('/api/me/cv').flush(current);
+    fixture.detectChanges();
+    fixture.nativeElement.querySelector('.cv-delete').click();
+    fixture.detectChanges();
+    const dialog: HTMLDialogElement = fixture.nativeElement.querySelector('dialog');
+    const confirm = dialog.querySelector<HTMLButtonElement>('.confirm-removal')!;
+    confirm.click();
+    http
+      .expectOne('/api/me/cv')
+      .flush({ message: 'internal details' }, { status, statusText: 'Error' });
+    fixture.detectChanges();
+    expect(dialog.open).toBe(true);
+    expect(dialog.querySelector('[role="alert"]')!.textContent).toContain(message);
+    expect(dialog.textContent).not.toContain('internal details');
+    expect(confirm.disabled).toBe(false);
+    expect(dialog.querySelector<HTMLButtonElement>('.cancel-removal')!.disabled).toBe(false);
+    expect(fixture.nativeElement.textContent).toContain('mon-cv.pdf');
+    confirm.click();
+    fixture.detectChanges();
+    expect(dialog.querySelector('[role="alert"]')).toBeNull();
+    http.expectOne('/api/me/cv').flush(null, { status: 204, statusText: 'No Content' });
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Aucun CV importé');
+  });
+
+  it('blocks replacement and download while the confirmation is open', () => {
+    http.expectOne('/api/me/cv').flush(current);
+    fixture.detectChanges();
+    selectFile(new File(['pdf'], 'replacement.pdf', { type: 'application/pdf' }));
+    fixture.nativeElement.querySelector('.cv-delete').click();
+    fixture.detectChanges();
+    submit();
+    fixture.nativeElement.querySelector('.cv-download').click();
+    http.expectNone('/api/me/cv');
+    http.expectNone('/api/me/cv/file');
+  });
+
+  it('cancels a pending deletion request when the page is destroyed', () => {
+    http.expectOne('/api/me/cv').flush(current);
+    fixture.detectChanges();
+    fixture.nativeElement.querySelector('.cv-delete').click();
+    fixture.detectChanges();
+    fixture.nativeElement.querySelector('.confirm-removal').click();
+    const request = http.expectOne('/api/me/cv');
+    fixture.destroy();
+    expect(request.cancelled).toBe(true);
+  });
 
   it('downloads the returned PDF using its UTF-8 response filename and releases the object URL', async () => {
     const download = browserDownload();
@@ -191,6 +305,7 @@ describe('Cv page', () => {
     expect(fixture.nativeElement.textContent).toContain('Aucun CV importé');
     expect(fixture.nativeElement.querySelector('[role="alert"]')).toBeNull();
     expect(fixture.nativeElement.querySelector('.cv-download')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.cv-delete')).toBeNull();
   });
 
   it('allows retrying a failed load without showing server details', () => {

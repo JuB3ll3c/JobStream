@@ -38,8 +38,55 @@
   overflow-wrap: anywhere;
 }
 
-.cv-download {
+.cv-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
   margin-top: 1.25rem;
+}
+
+.cv-delete,
+.confirm-removal {
+  border-color: #b42318;
+  background: #b42318;
+
+  &:hover:not(:disabled) {
+    background: #912018;
+  }
+}
+
+.removal-confirmation {
+  width: min(30rem, calc(100vw - 2rem));
+  max-height: calc(100dvh - 2rem);
+  padding: 1.5rem;
+  overflow-y: auto;
+  overflow-wrap: anywhere;
+  border: 1px solid var(--jobstream-color-border);
+  border-radius: var(--jobstream-radius-medium);
+  background: var(--jobstream-color-surface);
+  color: var(--jobstream-color-text);
+  box-shadow: 0 1rem 4rem rgb(15 23 42 / 25%);
+
+  &::backdrop {
+    background: rgb(15 23 42 / 55%);
+  }
+}
+
+.removal-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+.cancel-removal {
+  border-color: var(--jobstream-color-border);
+  background: var(--jobstream-color-surface);
+  color: var(--jobstream-color-text);
+
+  &:hover:not(:disabled) {
+    background: #eff6ff;
+  }
 }
 
 dl {

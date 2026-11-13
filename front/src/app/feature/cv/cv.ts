@@ -1,6 +1,6 @@
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, DestroyRef, inject, signal } from '@angular/core';
+import { Component, DestroyRef, ElementRef, inject, signal, viewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { finalize } from 'rxjs';
 import { CvMetadataDto, CvService } from '../../generated';
@@ -14,6 +14,7 @@ import { CvMetadataDto, CvService } from '../../generated';
 export class Cv {
   private readonly api = inject(CvService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly fileInput = viewChild<ElementRef<HTMLInputElement>>('fileInput');
   readonly metadata = signal<CvMetadataDto | null>(null);
   readonly loading = signal(false);
   readonly loadError = signal<string | null>(null);
@@ -23,6 +24,47 @@ export class Cv {
   readonly success = signal(false);
   readonly downloading = signal(false);
   readonly downloadError = signal<string | null>(null);
+  readonly confirmingRemoval = signal(false);
+  readonly removing = signal(false);
+  readonly removalError = signal<string | null>(null);
+
+  requestRemoval(dialog: HTMLDialogElement): void {
+    if (!this.metadata() || this.saving() || this.downloading() || this.confirmingRemoval()) return;
+    this.confirmingRemoval.set(true);
+    this.removalError.set(null);
+    dialog.showModal();
+  }
+
+  confirmRemoval(dialog: HTMLDialogElement, heading: HTMLHeadingElement): void {
+    if (!this.metadata() || !this.confirmingRemoval() || this.removing()) return;
+    this.removing.set(true);
+    this.removalError.set(null);
+    this.api
+      .deleteCv()
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => this.removing.set(false)),
+      )
+      .subscribe({
+        next: () => {
+          dialog.close();
+          this.metadata.set(null);
+          this.selectedFile.set(null);
+          const input = this.fileInput()?.nativeElement;
+          if (input) input.value = '';
+          this.uploadError.set(null);
+          this.downloadError.set(null);
+          this.success.set(false);
+          heading.focus();
+        },
+        error: (error: HttpErrorResponse) =>
+          this.removalError.set(
+            error.status === 404
+              ? 'Ce CV n’est plus disponible. Actualisez la page.'
+              : 'Impossible de supprimer votre CV. Réessayez.',
+          ),
+      });
+  }
 
   constructor() {
     this.load();
@@ -71,7 +113,15 @@ export class Cv {
 
   upload(input: HTMLInputElement): void {
     const file = this.selectedFile();
-    if (!file || this.saving() || this.loading() || this.loadError()) return;
+    if (
+      !file ||
+      this.saving() ||
+      this.loading() ||
+      this.loadError() ||
+      this.confirmingRemoval() ||
+      this.removing()
+    )
+      return;
     this.saving.set(true);
     this.uploadError.set(null);
     this.success.set(false);
@@ -110,7 +160,8 @@ export class Cv {
 
   download(): void {
     const cv = this.metadata();
-    if (!cv || this.downloading() || this.saving()) return;
+    if (!cv || this.downloading() || this.saving() || this.confirmingRemoval() || this.removing())
+      return;
     this.downloading.set(true);
     this.downloadError.set(null);
     this.api
