@@ -422,7 +422,7 @@ paths:
         Each user has at most one active CV. A successful import creates it or atomically replaces the previous PDF and its metadata.
         Validation must complete before replacement. If the request fails, the previous CV remains available and its version does not change.
         The file size limit applies to the PDF bytes, excluding multipart overhead, and must be enforced by the server.
-        Text extraction and analysis are not performed by this operation.
+        Plain text is extracted from the PDF and stored with it. Image-only PDFs are accepted without OCR and yield empty text. Analysis is not performed by this operation.
       operationId: uploadCv
       x-spring-provide-args:
         - '@org.springframework.security.core.annotation.AuthenticationPrincipal com.jobstream.api.entity.User user'

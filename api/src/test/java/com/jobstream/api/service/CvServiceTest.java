@@ -9,6 +9,11 @@ import com.jobstream.api.repository.UserCvRepository;
 import com.jobstream.api.repository.UserRepository;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.PDPageContentStream;
+import org.apache.pdfbox.pdmodel.font.PDType1Font;
+import org.apache.pdfbox.pdmodel.font.Standard14Fonts;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.pdmodel.graphics.image.LosslessFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -24,6 +29,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.awt.image.BufferedImage;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.stream.Stream;
@@ -71,6 +77,138 @@ class CvServiceTest {
             document.save(output);
             return output.toByteArray();
         }
+    }
+
+    private static byte[] textPdf(String... pages) throws IOException {
+        try (PDDocument document = new PDDocument();
+             ByteArrayOutputStream output = new ByteArrayOutputStream()) {
+            for (String text : pages) {
+                PDPage page = new PDPage();
+                document.addPage(page);
+                try (PDPageContentStream content = new PDPageContentStream(document, page)) {
+                    content.beginText();
+                    content.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 12);
+                    content.setLeading(16);
+                    content.newLineAtOffset(50, 750);
+                    for (String line : text.split("\n")) {
+                        content.showText(line);
+                        content.newLine();
+                    }
+                    content.endText();
+                }
+            }
+            document.save(output);
+            return output.toByteArray();
+        }
+    }
+
+    @Test
+    void upload_shouldExtractAndPersistPlainTextFromThePdfPages() throws IOException {
+        byte[] content = textPdf("Julien Bellec\nDéveloppeur Java", "Spring Boot et PostgreSQL");
+
+        cvService.uploadCv(alice.getId(),
+                new MockMultipartFile("file", "cv.pdf", "application/pdf", content));
+
+        var stored = cvService.getCvFile(alice.getId());
+        assertThat(stored.getExtractedText()).containsSubsequence(
+                "Julien Bellec", "Développeur Java", "Spring Boot et PostgreSQL");
+        assertThat(stored.getContent()).containsExactly(content);
+        assertThat(stored.getRevision()).isEqualTo(1L);
+    }
+
+    @Test
+    void upload_shouldReplaceTheTextTogetherWithThePdf() throws IOException {
+        cvService.uploadCv(alice.getId(),
+                new MockMultipartFile("file", "first.pdf", "application/pdf", textPdf("Ancien profil Java")));
+        byte[] replacement = textPdf("Profil Kotlin et Spring");
+
+        cvService.uploadCv(alice.getId(),
+                new MockMultipartFile("file", "replacement.pdf", "application/pdf", replacement));
+
+        var stored = cvService.getCvFile(alice.getId());
+        assertThat(stored.getExtractedText()).isEqualTo("Profil Kotlin et Spring");
+        assertThat(stored.getContent()).containsExactly(replacement);
+        assertThat(stored.getRevision()).isEqualTo(2L);
+    }
+
+    @Test
+    void upload_shouldReplaceAnExistingCvWithNoExtractedText() throws IOException {
+        var original = cvService.uploadCv(alice.getId(),
+                new MockMultipartFile("file", "legacy.pdf", "application/pdf", pdf("Legacy")));
+        var legacy = cvService.getCvFile(alice.getId());
+        legacy.setExtractedText(null);
+        cvRepository.save(legacy);
+
+        assertThat(cvService.getCvFile(alice.getId()).getExtractedText()).isNull();
+        assertThat(cvService.getCvMetadata(alice.getId())).isEqualTo(original.metadata());
+
+        cvService.uploadCv(alice.getId(),
+                new MockMultipartFile("file", "current.pdf", "application/pdf", textPdf("Profil actuel")));
+
+        var stored = cvService.getCvFile(alice.getId());
+        assertThat(stored.getExtractedText()).isEqualTo("Profil actuel");
+        assertThat(stored.getRevision()).isEqualTo(2L);
+    }
+
+    @Test
+    void upload_shouldAcceptAnImageOnlyPdfAndClearPreviousExtractedText() throws IOException {
+        cvService.uploadCv(alice.getId(),
+                new MockMultipartFile("file", "first.pdf", "application/pdf", textPdf("Profil précédent Java")));
+        byte[] content;
+        try (PDDocument document = new PDDocument();
+             ByteArrayOutputStream output = new ByteArrayOutputStream()) {
+            PDPage page = new PDPage();
+            document.addPage(page);
+            var image = LosslessFactory.createFromImage(document,
+                    new BufferedImage(100, 100, BufferedImage.TYPE_INT_RGB));
+            try (PDPageContentStream stream = new PDPageContentStream(document, page)) {
+                stream.drawImage(image, 50, 50);
+            }
+            document.save(output);
+            content = output.toByteArray();
+        }
+
+        cvService.uploadCv(alice.getId(),
+                new MockMultipartFile("file", "scan.pdf", "application/pdf", content));
+
+        var stored = cvService.getCvFile(alice.getId());
+        assertThat(stored.getExtractedText()).isEmpty();
+        assertThat(stored.getContent()).containsExactly(content);
+        assertThat(stored.getRevision()).isEqualTo(2L);
+    }
+
+    @Test
+    void upload_shouldPreserveTheCommittedCvWhenTextExtractionFails() throws IOException {
+        byte[] original = textPdf("Profil original Java");
+        var metadata = cvService.uploadCv(alice.getId(),
+                new MockMultipartFile("file", "original.pdf", "application/pdf", original)).metadata();
+        byte[] unreadable;
+        try (PDDocument document = new PDDocument();
+             ByteArrayOutputStream output = new ByteArrayOutputStream()) {
+            PDPage page = new PDPage();
+            document.addPage(page);
+            var stream = document.getDocument().createCOSStream();
+            try (var raw = stream.createRawOutputStream()) {
+                raw.write("invalid compressed content".getBytes(StandardCharsets.US_ASCII));
+            }
+            stream.setItem(COSName.FILTER, COSName.getPDFName("UnsupportedFilter"));
+            page.getCOSObject().setItem(COSName.CONTENTS, stream);
+            document.save(output);
+            unreadable = output.toByteArray();
+        }
+
+        assertThatThrownBy(() -> cvService.uploadCv(alice.getId(),
+                new MockMultipartFile("file", "unreadable.pdf", "application/pdf", unreadable)))
+                .isInstanceOfSatisfying(CvValidationException.class,
+                        error -> assertThat(error.getReason()).isEqualTo(CvValidationException.Reason.INVALID_FILE));
+
+        var stored = cvService.getCvFile(alice.getId());
+        assertThat(stored.getExtractedText()).isEqualTo("Profil original Java");
+        assertThat(stored.getContent()).containsExactly(original);
+        assertThat(stored.getOriginalFilename()).isEqualTo("original.pdf");
+        assertThat(stored.getRevision()).isEqualTo(1L);
+        assertThat(stored.getVersion()).isZero();
+        assertThat(cvService.getCvMetadata(alice.getId())).isEqualTo(metadata);
     }
 
     @Test
@@ -199,17 +337,18 @@ class CvServiceTest {
         bob.setRole(Role.USER);
         bob = userRepository.saveAndFlush(bob);
         try {
-            byte[] bobContent = pdf("Bob");
+            byte[] bobContent = textPdf("Bob");
             cvService.uploadCv(bob.getId(),
                     new MockMultipartFile("file", "bob.pdf", "application/pdf", bobContent));
             cvService.uploadCv(alice.getId(),
-                    new MockMultipartFile("file", "alice.pdf", "application/pdf", pdf("Alice")));
+                    new MockMultipartFile("file", "alice.pdf", "application/pdf", textPdf("Alice")));
             cvService.uploadCv(alice.getId(),
-                    new MockMultipartFile("file", "alice-new.pdf", "application/pdf", pdf("Alice updated")));
+                    new MockMultipartFile("file", "alice-new.pdf", "application/pdf", textPdf("Alice updated")));
 
             var stored = cvRepository.findByUserId(bob.getId()).orElseThrow();
             assertThat(stored.getContent()).containsExactly(bobContent);
             assertThat(stored.getOriginalFilename()).isEqualTo("bob.pdf");
+            assertThat(stored.getExtractedText()).isEqualTo("Bob");
             assertThat(stored.getRevision()).isEqualTo(1L);
         } finally {
             cvRepository.findByUserId(bob.getId()).ifPresent(cvRepository::delete);
@@ -262,7 +401,7 @@ class CvServiceTest {
     @MethodSource("invalidFiles")
     void upload_shouldRejectInvalidFilesWithoutChangingTheCommittedCv(
             String description, MultipartFile file, String reason) throws IOException {
-        byte[] original = pdf("Original");
+        byte[] original = textPdf("Original");
         var first = cvService.uploadCv(alice.getId(),
                 new MockMultipartFile("file", "original.pdf", "application/pdf", original));
 
@@ -273,6 +412,7 @@ class CvServiceTest {
         var stored = cvRepository.findByUserId(alice.getId()).orElseThrow();
         assertThat(stored.getContent()).containsExactly(original);
         assertThat(stored.getOriginalFilename()).isEqualTo("original.pdf");
+        assertThat(stored.getExtractedText()).isEqualTo("Original");
         assertThat(stored.getRevision()).isEqualTo(1L);
         assertThat(stored.getVersion()).isZero();
         assertThat(stored.getUploadedAt()).isEqualTo(first.metadata().getUploadedAt());

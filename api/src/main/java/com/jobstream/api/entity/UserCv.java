@@ -28,6 +28,9 @@ public class UserCv extends BaseEntity {
     @Column(nullable = false, columnDefinition = "bytea")
     private byte[] content;
 
+    @Column(name = "extracted_text", columnDefinition = "text")
+    private String extractedText;
+
     @Column(name = "original_filename", nullable = false, columnDefinition = "text")
     private String originalFilename;
 

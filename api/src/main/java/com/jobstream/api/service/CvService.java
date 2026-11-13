@@ -6,6 +6,7 @@ import com.jobstream.api.exception.ResourceNotFoundException;
 import com.jobstream.dto.CvMetadataDto;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.text.PDFTextStripper;
 import com.jobstream.api.mapper.CvMapper;
 import com.jobstream.api.repository.UserCvRepository;
 import com.jobstream.api.repository.UserRepository;
@@ -15,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 
@@ -48,8 +50,9 @@ public class CvService {
 
     @Transactional
     public CvUploadResult uploadCv(Long userId, MultipartFile file) {
-        byte[] content = readPdf(file);
+        byte[] content = readContent(file);
         String filename = filename(file);
+        String extractedText = extractText(content);
 
         var existing = cvRepository.findByUserId(userId);
         boolean created = existing.isEmpty();
@@ -61,6 +64,7 @@ public class CvService {
         });
 
         cv.setContent(content);
+        cv.setExtractedText(extractedText);
         cv.setOriginalFilename(filename);
         cv.setSizeBytes((long) content.length);
         cv.setUploadedAt(LocalDateTime.now().truncatedTo(ChronoUnit.MICROS));
@@ -68,7 +72,7 @@ public class CvService {
 
         return new CvUploadResult(cvMapper.toDto(cvRepository.save(cv)), created);
     }
-    private byte[] readPdf(MultipartFile file) {
+    private byte[] readContent(MultipartFile file) {
         if (file == null || file.isEmpty()) {
             throw new CvValidationException(CvValidationException.Reason.INVALID_FILE, "A non-empty PDF file is required");
         }
@@ -83,11 +87,25 @@ public class CvService {
             if (content.length > MAX_FILE_SIZE_BYTES) {
                 throw new CvValidationException(CvValidationException.Reason.TOO_LARGE, "The PDF must not exceed 5 MB");
             }
-            try (PDDocument document = Loader.loadPDF(content)) {
-                // Load the page tree to check readability, without extracting text.
-                document.getNumberOfPages();
-            }
             return content;
+        } catch (IOException exception) {
+            throw new CvValidationException(CvValidationException.Reason.INVALID_FILE,
+                    "A readable PDF file is required", exception);
+        }
+    }
+
+    private String extractText(byte[] content) {
+        try (PDDocument document = Loader.loadPDF(content)) {
+            // PDFBox can silently skip malformed page streams during text extraction.
+            for (var page : document.getPages()) {
+                var streams = page.getContentStreams();
+                while (streams.hasNext()) {
+                    try (var stream = streams.next().createInputStream()) {
+                        stream.transferTo(OutputStream.nullOutputStream());
+                    }
+                }
+            }
+            return new PDFTextStripper().getText(document).strip();
         } catch (IOException exception) {
             throw new CvValidationException(CvValidationException.Reason.INVALID_FILE,
                     "A readable PDF file is required", exception);
