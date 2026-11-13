@@ -81,6 +81,6 @@ class AdzunaControllerTest {
         mockMvc.perform(get("/adzuna/jobs/job_unknown"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status").value(404))
-                .andExpect(jsonPath("$.error").value("Job not found"));
+                .andExpect(jsonPath("$.error").value("Resource not found"));
     }
 }

@@ -28,6 +28,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -71,7 +72,7 @@ class JobControllerTest {
 
     @Test
     void savedOfferOperations_shouldReceiveUserThroughAuthenticationPrincipal() {
-        assertThat(JobApi.class.getDeclaredMethods()).hasSize(5);
+        assertThat(JobApi.class.getDeclaredMethods()).hasSize(6);
         for (var method : JobApi.class.getDeclaredMethods()) {
             var parameters = method.getParameters();
             var principal = parameters[parameters.length - 1];
@@ -112,6 +113,53 @@ class JobControllerTest {
     }
 
     @Test
+    void updateJobStatus_shouldPersistEachStatusForOwner() throws Exception {
+        Job offer = createJob("tracked", alice);
+        for (String trackingStatus : new String[]{"IN_PROGRESS", "APPLIED", "DONE", "TO_PROCESS"}) {
+            mockMvc.perform(asAlice(patch("/jobs/{id}/status", offer.getId()))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"status\":\"" + trackingStatus + "\"}"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.id").value(offer.getId()))
+                    .andExpect(jsonPath("$.status").value(trackingStatus));
+            mockMvc.perform(asAlice(get("/jobs/{id}", offer.getId())))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.status").value(trackingStatus));
+        }
+    }
+
+    @Test
+    void updateJobStatus_shouldRejectInvalidOrMissingStatusWithoutChangingOffer() throws Exception {
+        Job offer = createJob("tracked", alice);
+        for (String body : new String[]{"{}", "{\"status\":null}", "{\"status\":\"UNKNOWN\"}"}) {
+            mockMvc.perform(asAlice(patch("/jobs/{id}/status", offer.getId()))
+                            .contentType(MediaType.APPLICATION_JSON).content(body))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.status").value(400));
+        }
+        mockMvc.perform(asAlice(patch("/jobs/{id}/status", offer.getId()))
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(asAlice(get("/jobs/{id}", offer.getId())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("TO_PROCESS"));
+    }
+
+    @Test
+    void updateJobStatus_shouldHideMissingAndForeignOffers() throws Exception {
+        Job foreign = createJob("foreign", bob);
+        for (Long id : new Long[]{foreign.getId(), Long.MAX_VALUE}) {
+            mockMvc.perform(asAlice(patch("/jobs/{id}/status", id))
+                            .param("userId", bob.getId().toString())
+                            .contentType(MediaType.APPLICATION_JSON).content("{\"status\":\"DONE\"}"))
+                    .andExpect(status().isNotFound());
+        }
+        mockMvc.perform(get("/jobs/{id}", foreign.getId()).header("Authorization", "Bearer " + bobToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("TO_PROCESS"));
+    }
+
+    @Test
     void getJobByExternalId_shouldReturnOnlyAuthenticatedOwnersMatchingOffer() throws Exception {
         createJob("shared-external-id", bob);
         Job offer = createJob("shared-external-id", alice);
@@ -132,7 +180,7 @@ class JobControllerTest {
                             .param("userId", bob.getId().toString()))
                     .andExpect(status().isNotFound())
                     .andExpect(jsonPath("$.status").value(404))
-                    .andExpect(jsonPath("$.error").value("Job not found"));
+                    .andExpect(jsonPath("$.error").value("Resource not found"));
         }
     }
 
@@ -153,7 +201,7 @@ class JobControllerTest {
             mockMvc.perform(asAlice(get("/jobs/" + id)))
                     .andExpect(status().isNotFound())
                     .andExpect(jsonPath("$.status").value(404))
-                    .andExpect(jsonPath("$.error").value("Job not found"));
+                    .andExpect(jsonPath("$.error").value("Resource not found"));
         }
     }
 
@@ -219,6 +267,19 @@ class JobControllerTest {
     }
 
     @Test
+    void saveJob_shouldStartInToProcessStatus() throws Exception {
+        var result = mockMvc.perform(asAlice(post("/jobs"))
+                        .contentType(MediaType.APPLICATION_JSON).content(JOB_JSON))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.status").value("TO_PROCESS"))
+                .andReturn();
+        long id = objectMapper.readTree(result.getResponse().getContentAsString()).get("id").asLong();
+        mockMvc.perform(asAlice(get("/jobs/" + id)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("TO_PROCESS"));
+    }
+
+    @Test
     void saveJob_shouldReturn400WhenBodyInvalid() throws Exception {
         mockMvc.perform(asAlice(post("/jobs")).contentType(MediaType.APPLICATION_JSON).content("{}"))
                 .andExpect(status().isBadRequest())
@@ -260,7 +321,8 @@ class JobControllerTest {
     void allOperations_shouldRequireAuthentication() throws Exception {
         for (var request : new MockHttpServletRequestBuilder[]{
                 get("/jobs"), get("/jobs/1"), get("/jobs/by-external-id/job_1"), delete("/jobs/1"),
-                post("/jobs").contentType(MediaType.APPLICATION_JSON).content(JOB_JSON)}) {
+                post("/jobs").contentType(MediaType.APPLICATION_JSON).content(JOB_JSON),
+                patch("/jobs/1/status").contentType(MediaType.APPLICATION_JSON).content("{\"status\":\"DONE\"}")}) {
             mockMvc.perform(request).andExpect(status().isUnauthorized());
         }
     }

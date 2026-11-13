@@ -168,6 +168,40 @@ class JobRepositoryTest {
         });
     }
 
+    private void applyStatusMigration() {
+        jdbcTemplate.execute((ConnectionCallback<Void>) connection -> {
+            ScriptUtils.executeSqlScript(connection, new ClassPathResource("db/migration/V2__add_job_status.sql"));
+            return null;
+        });
+    }
+
+    @Test
+    void statusMigration_shouldInitializeExistingAndNewOffersToToProcess() {
+        initializeSqlSchema();
+        applyStatusMigration();
+        assertThat(jdbcTemplate.queryForList("SELECT DISTINCT status FROM job", String.class))
+                .containsExactly("TO_PROCESS");
+        jdbcTemplate.update("INSERT INTO job (external_id, title, company, user_id) VALUES ('new', 'Java', 'Acme', 2)");
+        assertThat(jdbcTemplate.queryForObject("SELECT status FROM job WHERE external_id = 'new'", String.class))
+                .isEqualTo("TO_PROCESS");
+    }
+
+    @Test
+    void statusMigration_shouldRejectUnknownStatus() {
+        initializeSqlSchema();
+        applyStatusMigration();
+        assertThatThrownBy(() -> jdbcTemplate.update("UPDATE job SET status = 'UNKNOWN' WHERE user_id = 2"))
+                .isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void statusMigration_shouldRejectNullStatus() {
+        initializeSqlSchema();
+        applyStatusMigration();
+        assertThatThrownBy(() -> jdbcTemplate.update("UPDATE job SET status = NULL WHERE user_id = 2"))
+                .isInstanceOf(DataIntegrityViolationException.class);
+    }
+
     @Test
     void sqlSchema_shouldEnforceUniquenessPerUserAndLoadOwnedFixtures() {
         initializeSqlSchema();

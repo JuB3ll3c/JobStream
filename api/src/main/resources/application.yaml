@@ -3,6 +3,10 @@ server:
     context-path: /api
 
 spring:
+  servlet:
+    multipart:
+      max-file-size: 5000000B
+      max-request-size: 6000000B
   application:
     name: api
   datasource:

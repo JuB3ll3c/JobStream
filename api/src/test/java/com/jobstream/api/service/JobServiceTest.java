@@ -1,6 +1,7 @@
 package com.jobstream.api.service;
 
 import com.jobstream.api.config.TestContainerConfig;
+import jakarta.persistence.EntityManager;
 import com.jobstream.api.entity.Job;
 import com.jobstream.api.entity.Role;
 import com.jobstream.api.entity.User;
@@ -9,6 +10,7 @@ import com.jobstream.api.exception.ResourceConflictException;
 import com.jobstream.api.repository.JobRepository;
 import com.jobstream.api.repository.UserRepository;
 import com.jobstream.dto.JobRequestDto;
+import com.jobstream.dto.JobStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,6 +31,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 class JobServiceTest {
     @Autowired
     private JobService jobService;
+
+    @Autowired
+    private EntityManager entityManager;
 
     @Autowired
     private JobRepository jobRepository;
@@ -61,6 +66,22 @@ class JobServiceTest {
         job.setLocation("Zurich");
         job.setUser(owner);
         return jobRepository.saveAndFlush(job);
+    }
+
+    @Test
+    void updateJobStatus_shouldPersistStatusAcrossReloadAndExposeItInCollection() {
+        var saved = jobService.saveJob(alice.getId(),
+                new JobRequestDto("tracked", "Java Developer", "Acme", "Zurich"));
+        assertThat(saved.getStatus()).isEqualTo(JobStatus.TO_PROCESS);
+
+        var updated = jobService.updateJobStatus(saved.getId(), alice.getId(), JobStatus.APPLIED);
+        assertThat(updated.getStatus()).isEqualTo(JobStatus.APPLIED);
+        entityManager.clear();
+
+        assertThat(jobService.getJobById(saved.getId(), alice.getId()).getStatus())
+                .isEqualTo(JobStatus.APPLIED);
+        assertThat(jobService.getJobs(alice.getId(), PageRequest.of(0, 20)).getContent())
+                .extracting(job -> job.getStatus()).containsExactly(JobStatus.APPLIED);
     }
 
     @Test

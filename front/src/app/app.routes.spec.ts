@@ -8,12 +8,13 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { BASE_PATH } from './generated';
-import { JobDetail } from './feature/jobs/job-detail/job-detail';
+import { SavedJobs } from './feature/jobs/saved-jobs/saved-jobs';
+import { Cv } from './feature/cv/cv';
 
 describe('application routes', () => {
   afterEach(() => sessionStorage.clear());
 
-  it('redirects an anonymous detail visitor to login before making a search request', async () => {
+  it('redirects an anonymous CV visitor before requesting personal metadata', async () => {
     TestBed.configureTestingModule({
       providers: [
         provideRouter(routes),
@@ -24,14 +25,14 @@ describe('application routes', () => {
     });
     sessionStorage.clear();
     const harness = await RouterTestingHarness.create();
-    await harness.navigateByUrl('/jobs/ext-1?title=Java');
+    await harness.navigateByUrl('/cv');
     expect(TestBed.inject(Router).url).toBe('/login');
     const http = TestBed.inject(HttpTestingController);
     http.expectNone(() => true);
     http.verify();
   });
 
-  it('allows an authenticated user to open the external detail route', async () => {
+  it('loads CV metadata on the authenticated CV route', async () => {
     TestBed.configureTestingModule({
       providers: [
         provideRouter(routes),
@@ -42,19 +43,32 @@ describe('application routes', () => {
     });
     sessionStorage.setItem('access_token', 'valid-token');
     const harness = await RouterTestingHarness.create();
-    await harness.navigateByUrl('/jobs/ext-1?title=Java', JobDetail);
+    await harness.navigateByUrl('/cv', Cv);
     const http = TestBed.inject(HttpTestingController);
-    http
-      .expectOne((req) => req.url === '/api/job-offers')
-      .flush({
-        content: [],
-        page: 1,
-        size: 20,
-        totalElements: 0,
-        totalPages: 0,
-      });
+    http.expectOne('/api/me/cv').flush({}, { status: 404, statusText: 'Not Found' });
+    harness.detectChanges();
+    expect(harness.routeNativeElement!.textContent).toContain('Aucun CV importé');
     http.verify();
   });
+
+  it('redirects an anonymous search visitor before making a request', async () => {
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter(routes),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: BASE_PATH, useValue: '/api' },
+      ],
+    });
+    sessionStorage.clear();
+    const harness = await RouterTestingHarness.create();
+    await harness.navigateByUrl('/jobs?title=Java');
+    expect(TestBed.inject(Router).url).toBe('/login');
+    const http = TestBed.inject(HttpTestingController);
+    http.expectNone(() => true);
+    http.verify();
+  });
+
   it('should use the protected jobs page as the default destination', async () => {
     const rootRoute = routes.find((route) => route.path === '');
     const loginRoute = routes.find((route) => route.path === 'login');
@@ -76,5 +90,45 @@ describe('application routes', () => {
     expect(registerRoute).toBeDefined();
     expect(registerRoute?.canActivate).toBeUndefined();
     await expect(registerRoute?.loadComponent?.()).resolves.toBe(Register);
+  });
+  it('protects the saved jobs board before loading personal offers', async () => {
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter(routes),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: BASE_PATH, useValue: '/api' },
+      ],
+    });
+    sessionStorage.clear();
+    const harness = await RouterTestingHarness.create();
+    await harness.navigateByUrl('/saved-jobs');
+    expect(TestBed.inject(Router).url).toBe('/login');
+    const http = TestBed.inject(HttpTestingController);
+    http.expectNone(() => true);
+    http.verify();
+  });
+
+  it('loads personal offers on the authenticated saved jobs route', async () => {
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter(routes),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: BASE_PATH, useValue: '/api' },
+      ],
+    });
+    sessionStorage.setItem('access_token', 'valid-token');
+    const harness = await RouterTestingHarness.create();
+    await harness.navigateByUrl('/saved-jobs', SavedJobs);
+    const http = TestBed.inject(HttpTestingController);
+    http.expectOne((req) => req.url === '/api/jobs').flush({ content: [], page: 0, totalPages: 0 });
+    http.verify();
+  });
+
+  it('keeps details inside the smart pages instead of exposing detail routes', () => {
+    expect(
+      routes.some((route) => route.path === 'jobs/:externalId' || route.path === 'saved-jobs/:id'),
+    ).toBe(false);
   });
 });

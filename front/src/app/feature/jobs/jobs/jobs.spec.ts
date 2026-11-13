@@ -7,17 +7,28 @@ import { BASE_PATH, JobDto } from '../../../generated';
 import { Jobs } from './jobs';
 import { Login } from '../../auth/login/login';
 import { authInterceptor } from '../../../core/service/auth/auth-interceptor';
-import { JobDetail } from '../job-detail/job-detail';
 
 describe('Jobs search', () => {
   let http: HttpTestingController;
   let harness: RouterTestingHarness;
   beforeEach(async () => {
+    Object.defineProperty(HTMLDialogElement.prototype, 'showModal', {
+      configurable: true,
+      value() {
+        this.setAttribute('open', '');
+      },
+    });
+    Object.defineProperty(HTMLDialogElement.prototype, 'close', {
+      configurable: true,
+      value() {
+        this.removeAttribute('open');
+        this.dispatchEvent(new Event('close'));
+      },
+    });
     await TestBed.configureTestingModule({
       providers: [
         provideRouter([
           { path: 'jobs', component: Jobs },
-          { path: 'jobs/:externalId', component: JobDetail },
           { path: 'login', component: Login },
         ]),
         provideHttpClient(withInterceptors([authInterceptor])),
@@ -59,9 +70,9 @@ describe('Jobs search', () => {
   }
 
   function saveButton(index = 0): HTMLButtonElement {
-    return harness.routeNativeElement!.querySelectorAll<HTMLButtonElement>('.offer-card button')[
-      index
-    ];
+    return harness.routeNativeElement!.querySelectorAll<HTMLButtonElement>(
+      '.offer-card .bookmark-button',
+    )[index];
   }
 
   it('cancels pending saves when leaving the page and starts fresh when returning', async () => {
@@ -100,16 +111,21 @@ describe('Jobs search', () => {
         totalPages: 2,
       });
     harness.detectChanges();
-    const link = harness.routeNativeElement!.querySelector<HTMLAnchorElement>('.offer-card h2 a')!;
-    expect(link.getAttribute('href')).toBe('/jobs/ext-1?title=Java&location=Zurich&page=2&size=10');
-    link.click();
-    await harness.fixture.whenStable();
+
+    const open =
+      harness.routeNativeElement!.querySelector<HTMLButtonElement>('.offer-card h2 button')!;
+    open.click();
     harness.detectChanges();
-    expect(TestBed.inject(Router).url).toBe(
-      '/jobs/ext-1?title=Java&location=Zurich&page=2&size=10',
-    );
-    expect(harness.routeNativeElement!.querySelector('h1')!.textContent).toBe('Java Engineer');
-    http.expectNone((req) => req.url === '/api/job-offers' || req.url.startsWith('/api/adzuna/'));
+    expect(TestBed.inject(Router).url).toBe('/jobs?title=Java&location=Zurich&page=2&size=10');
+    const dialog = harness.routeNativeElement!.querySelector('dialog')!;
+    expect(dialog.open).toBe(true);
+    expect(dialog.querySelector('.detail-title .bookmark-button')).not.toBeNull();
+    expect(dialog.querySelectorAll('.close-detail')).toHaveLength(1);
+    expect(dialog.querySelector('.detail-card')!.textContent).toContain('Java Engineer');
+    http.expectNone(() => true);
+    dialog.querySelector<HTMLButtonElement>('.close-detail')!.click();
+    harness.detectChanges();
+    expect(dialog.open).toBe(false);
   });
 
   it('uses an accessible bookmark icon that fills when saved', async () => {
@@ -462,5 +478,42 @@ describe('Jobs search', () => {
     expect(harness.routeNativeElement!.querySelector<HTMLInputElement>('#title')!.value).toBe(
       'Java',
     );
+  });
+  it('shares saving state between the modal and its search card', async () => {
+    await showOffers();
+    harness.routeNativeElement!.querySelector<HTMLButtonElement>('.offer-card h2 button')!.click();
+    harness.detectChanges();
+    const modalSave =
+      harness.routeNativeElement!.querySelector<HTMLButtonElement>('dialog .bookmark-button')!;
+    modalSave.click();
+    modalSave.click();
+    const request = http.expectOne('/api/jobs');
+    harness.detectChanges();
+    expect(modalSave.disabled).toBe(true);
+    expect(saveButton().disabled).toBe(true);
+    request.flush({ ...offer, id: 42 });
+    harness.detectChanges();
+    expect(modalSave.getAttribute('aria-pressed')).toBe('true');
+    expect(saveButton().getAttribute('aria-pressed')).toBe('true');
+    modalSave.click();
+    http.expectOne('/api/jobs/42').flush(null, { status: 204, statusText: 'No Content' });
+    harness.detectChanges();
+    expect(modalSave.getAttribute('aria-pressed')).toBe('false');
+  });
+
+  it('shows a failed save inside the modal and allows retrying', async () => {
+    await showOffers();
+    harness.routeNativeElement!.querySelector<HTMLButtonElement>('.offer-card h2 button')!.click();
+    harness.detectChanges();
+    const button =
+      harness.routeNativeElement!.querySelector<HTMLButtonElement>('dialog .bookmark-button')!;
+    button.click();
+    http.expectOne('/api/jobs').flush({}, { status: 500, statusText: 'Error' });
+    harness.detectChanges();
+    expect(
+      harness.routeNativeElement!.querySelector('dialog [role="alert"]')!.textContent,
+    ).toContain('Impossible de sauvegarder');
+    button.click();
+    http.expectOne('/api/jobs').flush({ ...offer, id: 42 });
   });
 });

@@ -3,6 +3,7 @@ package com.jobstream.api.mapper;
 import com.jobstream.api.entity.Job;
 import com.jobstream.dto.JobDto;
 import com.jobstream.dto.JobRequestDto;
+import com.jobstream.dto.JobStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mapstruct.factory.Mappers;
@@ -23,9 +24,16 @@ class JobMapperTest {
     }
 
     @Test
+    void toDto_shouldExposeInitialTrackingStatus() {
+        assertThat(jobMapper.toDto(new Job()).getStatus())
+                .isEqualTo(JobStatus.TO_PROCESS);
+    }
+
+    @Test
     void toDto_shouldMapAllFields() {
         Job job = new Job();
         job.setId(42L);
+        job.setStatus(JobStatus.DONE);
         job.setExternalId("job_1");
         job.setTitle("Java Developer");
         job.setCompany("TechCorp");
@@ -43,6 +51,7 @@ class JobMapperTest {
         JobDto dto = jobMapper.toDto(job);
 
         assertThat(dto.getId()).isEqualTo(42L);
+        assertThat(dto.getStatus()).isEqualTo(JobStatus.DONE);
         assertThat(dto.getExternalId()).isEqualTo("job_1");
         assertThat(dto.getTitle()).isEqualTo("Java Developer");
         assertThat(dto.getCompany()).isEqualTo("TechCorp");
@@ -72,6 +81,7 @@ class JobMapperTest {
         Job job = jobMapper.toEntity(request);
 
         assertThat(job.getId()).isNull();
+        assertThat(job.getStatus()).isEqualTo(JobStatus.TO_PROCESS);
         assertThat(job.getExternalId()).isEqualTo("job_1");
         assertThat(job.getTitle()).isEqualTo("Java Developer");
         assertThat(job.getCompany()).isEqualTo("TechCorp");

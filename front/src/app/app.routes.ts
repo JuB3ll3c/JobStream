@@ -18,13 +18,18 @@ export const routes: Routes = [
       import('./feature/auth/register/register/register').then((m) => m.Register),
   },
   {
+    path: 'saved-jobs',
+    canActivate: [authGuard],
+    loadComponent: () => import('./feature/jobs/saved-jobs/saved-jobs').then((m) => m.SavedJobs),
+  },
+  {
+    path: 'cv',
+    canActivate: [authGuard],
+    loadComponent: () => import('./feature/cv/cv').then((m) => m.Cv),
+  },
+  {
     path: 'jobs',
     canActivate: [authGuard],
     loadComponent: () => import('./feature/jobs/jobs/jobs').then((m) => m.Jobs),
-  },
-  {
-    path: 'jobs/:externalId',
-    canActivate: [authGuard],
-    loadComponent: () => import('./feature/jobs/job-detail/job-detail').then((m) => m.JobDetail),
   },
 ];

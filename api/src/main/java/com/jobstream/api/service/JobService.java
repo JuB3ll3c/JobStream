@@ -7,6 +7,7 @@ import com.jobstream.api.repository.JobRepository;
 import com.jobstream.api.repository.UserRepository;
 import com.jobstream.dto.JobDto;
 import com.jobstream.dto.JobRequestDto;
+import com.jobstream.dto.JobStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -46,6 +47,14 @@ public class JobService {
         var job = jobMapper.toEntity(jobRequestDto);
         job.setUser(userRepository.getReferenceById(userId));
         return jobMapper.toDto(jobRepository.save(job));
+    }
+
+    @Transactional
+    public JobDto updateJobStatus(Long id, Long userId, JobStatus status) {
+        var job = jobRepository.findByIdAndUserId(id, userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Job not found with id: " + id));
+        job.setStatus(status);
+        return jobMapper.toDto(jobRepository.saveAndFlush(job));
     }
 
     @Transactional
