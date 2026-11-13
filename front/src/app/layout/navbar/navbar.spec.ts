@@ -59,10 +59,11 @@ describe('Navbar', () => {
     expect(authService.logout).toHaveBeenCalledOnce();
     expect(router.navigate).toHaveBeenCalledWith(['/login']);
   });
-  it('links authenticated users to search and their saved offers', () => {
+  it('links authenticated users to search, saved offers and their CV', () => {
     const links = Array.from(fixture.nativeElement.querySelectorAll('a')) as HTMLAnchorElement[];
-    expect(links.map((link) => link.getAttribute('href'))).toEqual(['/jobs', '/saved-jobs']);
+    expect(links.map((link) => link.getAttribute('href'))).toEqual(['/jobs', '/saved-jobs', '/cv']);
     expect(links[1].textContent).toContain('Mes offres');
+    expect(links[2].textContent).toContain('Mon CV');
   });
 
   it('hides personal navigation when logged out', () => {

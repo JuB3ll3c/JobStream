@@ -23,6 +23,11 @@ export const routes: Routes = [
     loadComponent: () => import('./feature/jobs/saved-jobs/saved-jobs').then((m) => m.SavedJobs),
   },
   {
+    path: 'cv',
+    canActivate: [authGuard],
+    loadComponent: () => import('./feature/cv/cv').then((m) => m.Cv),
+  },
+  {
     path: 'jobs',
     canActivate: [authGuard],
     loadComponent: () => import('./feature/jobs/jobs/jobs').then((m) => m.Jobs),

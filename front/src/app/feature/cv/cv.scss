@@ -1,0 +1,130 @@
+:host {
+  display: block;
+}
+
+.cv-page {
+  max-width: 48rem;
+  margin-inline: auto;
+  padding: clamp(1.5rem, 4vw, 3rem) 1rem;
+
+  h1 {
+    margin: 0;
+    font-size: clamp(1.75rem, 4vw, 2.25rem);
+    letter-spacing: -0.035em;
+  }
+
+  h2 {
+    margin: 0 0 1rem;
+    font-size: 1.125rem;
+  }
+}
+
+.cv-intro {
+  margin: 0.5rem 0 1.5rem;
+  color: var(--jobstream-color-muted);
+}
+
+.cv-card {
+  margin-block: 1.25rem;
+  padding: clamp(1rem, 3vw, 1.75rem);
+  border: 1px solid var(--jobstream-color-border);
+  border-radius: var(--jobstream-radius-medium);
+  background: var(--jobstream-color-surface);
+  box-shadow: var(--jobstream-shadow-small);
+}
+
+.cv-filename {
+  font-weight: 650;
+  overflow-wrap: anywhere;
+}
+
+dl {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem 3rem;
+  margin-bottom: 0;
+
+  dt {
+    color: var(--jobstream-color-muted);
+    font-size: 0.875rem;
+  }
+
+  dd {
+    margin: 0.25rem 0 0;
+  }
+}
+
+form {
+  display: grid;
+  gap: 0.75rem;
+
+  label {
+    font-weight: 650;
+  }
+
+  p {
+    margin: 0;
+  }
+}
+
+#cv-file-help {
+  color: var(--jobstream-color-muted);
+  font-size: 0.875rem;
+}
+
+input[type='file'] {
+  width: 100%;
+  min-width: 0;
+  padding: 0.5rem;
+  border: 1px solid var(--jobstream-color-border);
+  border-radius: var(--jobstream-radius-small);
+
+  &::file-selector-button {
+    margin-right: 0.75rem;
+    padding: 0.5rem;
+    border: 0;
+    border-radius: 0.25rem;
+    background: #eff6ff;
+    color: var(--jobstream-color-primary-dark);
+    cursor: pointer;
+  }
+}
+
+button {
+  min-height: 2.875rem;
+  padding: 0.625rem 1rem;
+  border: 1px solid var(--jobstream-color-primary-dark);
+  border-radius: var(--jobstream-radius-small);
+  background: var(--jobstream-color-primary);
+  color: #ffffff;
+  font-weight: 700;
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    background: var(--jobstream-color-primary-dark);
+  }
+}
+
+button:disabled,
+input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+button:focus-visible,
+input:focus-visible {
+  outline: 3px solid var(--jobstream-color-primary);
+  outline-offset: 2px;
+}
+
+[role='alert'] {
+  padding: 0.75rem;
+  border: 1px solid #fda29b;
+  border-radius: var(--jobstream-radius-small);
+  background: #fef3f2;
+  color: #b42318;
+}
+
+form [role='status'] {
+  color: var(--jobstream-color-accent);
+}

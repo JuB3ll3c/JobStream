@@ -9,9 +9,47 @@ import { provideRouter, Router } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { BASE_PATH } from './generated';
 import { SavedJobs } from './feature/jobs/saved-jobs/saved-jobs';
+import { Cv } from './feature/cv/cv';
 
 describe('application routes', () => {
   afterEach(() => sessionStorage.clear());
+
+  it('redirects an anonymous CV visitor before requesting personal metadata', async () => {
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter(routes),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: BASE_PATH, useValue: '/api' },
+      ],
+    });
+    sessionStorage.clear();
+    const harness = await RouterTestingHarness.create();
+    await harness.navigateByUrl('/cv');
+    expect(TestBed.inject(Router).url).toBe('/login');
+    const http = TestBed.inject(HttpTestingController);
+    http.expectNone(() => true);
+    http.verify();
+  });
+
+  it('loads CV metadata on the authenticated CV route', async () => {
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter(routes),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: BASE_PATH, useValue: '/api' },
+      ],
+    });
+    sessionStorage.setItem('access_token', 'valid-token');
+    const harness = await RouterTestingHarness.create();
+    await harness.navigateByUrl('/cv', Cv);
+    const http = TestBed.inject(HttpTestingController);
+    http.expectOne('/api/me/cv').flush({}, { status: 404, statusText: 'Not Found' });
+    harness.detectChanges();
+    expect(harness.routeNativeElement!.textContent).toContain('Aucun CV importé');
+    http.verify();
+  });
 
   it('redirects an anonymous search visitor before making a request', async () => {
     TestBed.configureTestingModule({

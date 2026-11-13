@@ -1,0 +1,54 @@
+<main class="cv-page">
+  <h1>Mon CV</h1>
+  @if (loading()) {
+    <p role="status">Chargement du CV…</p>
+  } @else if (loadError(); as error) {
+    <p role="alert">{{ error }}</p>
+    <button type="button" (click)="load()">Réessayer</button>
+  } @else if (metadata(); as cv) {
+    <section class="cv-card" aria-labelledby="current-cv-title">
+      <h2 id="current-cv-title">CV actuel</h2>
+      <p class="cv-filename">{{ cv.originalFilename }}</p>
+      <dl>
+        <div>
+          <dt>Taille</dt>
+          <dd>{{ cv.sizeBytes / 1000 | number: '1.0-1' }} ko</dd>
+        </div>
+        <div>
+          <dt>Dernier import</dt>
+          <dd>{{ cv.uploadedAt | date: 'dd/MM/yyyy HH:mm' }}</dd>
+        </div>
+      </dl>
+    </section>
+  } @else {
+    <p>Aucun CV importé pour le moment.</p>
+  }
+  @if (!loading() && !loadError()) {
+    <section class="cv-card" aria-labelledby="upload-cv-title">
+      <h2 id="upload-cv-title">{{ metadata() ? 'Remplacer mon CV' : 'Importer mon CV' }}</h2>
+      <form (submit)="$event.preventDefault(); upload(fileInput)" [attr.aria-busy]="saving()">
+        <label for="cv-file">Fichier PDF</label>
+        <p id="cv-file-help">PDF uniquement, 5 Mo maximum.</p>
+        <input
+          #fileInput
+          id="cv-file"
+          type="file"
+          accept="application/pdf,.pdf"
+          [attr.aria-describedby]="uploadError() ? 'cv-file-help cv-upload-error' : 'cv-file-help'"
+          [attr.aria-invalid]="!!uploadError()"
+          [disabled]="saving()"
+          (change)="selectFile(fileInput)"
+        />
+        @if (uploadError(); as error) {
+          <p id="cv-upload-error" role="alert">{{ error }}</p>
+        }
+        @if (success()) {
+          <p role="status">CV enregistré.</p>
+        }
+        <button type="submit" [disabled]="!selectedFile() || saving()">
+          {{ saving() ? 'Envoi en cours…' : metadata() ? 'Remplacer le CV' : 'Importer le CV' }}
+        </button>
+      </form>
+    </section>
+  }
+</main>
