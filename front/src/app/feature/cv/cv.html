@@ -19,6 +19,18 @@
           <dd>{{ cv.uploadedAt | date: 'dd/MM/yyyy HH:mm' }}</dd>
         </div>
       </dl>
+      <button
+        class="cv-download"
+        type="button"
+        [disabled]="downloading() || saving()"
+        [attr.aria-busy]="downloading()"
+        (click)="download()"
+      >
+        {{ downloading() ? 'Téléchargement en cours…' : 'Télécharger mon CV' }}
+      </button>
+      @if (downloadError(); as error) {
+        <p role="alert">{{ error }}</p>
+      }
     </section>
   } @else {
     <p>Aucun CV importé pour le moment.</p>

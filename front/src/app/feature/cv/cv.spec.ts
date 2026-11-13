@@ -28,7 +28,135 @@ describe('Cv page', () => {
     fixture.detectChanges();
   });
 
-  afterEach(() => http.verify());
+  afterEach(() => {
+    http.verify();
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+  });
+
+  function browserDownload() {
+    const create = vi.fn().mockReturnValue('blob:cv-pdf');
+    const revoke = vi.fn();
+    const NativeURL = URL;
+    vi.stubGlobal(
+      'URL',
+      class extends NativeURL {
+        static override createObjectURL = create;
+        static override revokeObjectURL = revoke;
+      },
+    );
+    const links: { href: string; filename: string; connected: boolean }[] = [];
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (
+      this: HTMLAnchorElement,
+    ) {
+      links.push({ href: this.href, filename: this.download, connected: this.isConnected });
+    });
+    return { create, revoke, links };
+  }
+
+  it('downloads the returned PDF using its UTF-8 response filename and releases the object URL', async () => {
+    const download = browserDownload();
+    http.expectOne('/api/me/cv').flush(current);
+    fixture.detectChanges();
+    const button: HTMLButtonElement = fixture.nativeElement.querySelector('.cv-download');
+    expect(button).not.toBeNull();
+    button.click();
+    fixture.detectChanges();
+    button.click();
+    const request = http.expectOne('/api/me/cv/file');
+    expect(request.request.method).toBe('GET');
+    expect(request.request.responseType).toBe('blob');
+    expect(button.disabled).toBe(true);
+    expect(button.textContent).toContain('Téléchargement');
+    const pdf = new Blob(['original PDF bytes'], { type: 'application/pdf' });
+    request.flush(pdf, {
+      headers: { 'Content-Disposition': "attachment; filename*=UTF-8''CV%20%C3%A9t%C3%A9.pdf" },
+    });
+    fixture.detectChanges();
+    expect(download.create).toHaveBeenCalledWith(pdf);
+    expect(download.links).toEqual([
+      { href: 'blob:cv-pdf', filename: 'CV été.pdf', connected: true },
+    ]);
+    expect(document.querySelector('a[download]')).toBeNull();
+    expect(button.disabled).toBe(false);
+    await vi.waitFor(() => expect(download.revoke).toHaveBeenCalledWith('blob:cv-pdf'));
+  });
+
+  it.each([null, "attachment; filename*=UTF-8''%E0%A4%A"])(
+    'uses the displayed filename when the download header is missing or invalid: %s',
+    async (disposition) => {
+      const download = browserDownload();
+      http.expectOne('/api/me/cv').flush(current);
+      fixture.detectChanges();
+      fixture.nativeElement.querySelector('.cv-download').click();
+      http.expectOne('/api/me/cv/file').flush(new Blob(['pdf'], { type: 'application/pdf' }), {
+        headers: disposition ? { 'Content-Disposition': disposition } : {},
+      });
+      expect(download.links[0]?.filename).toBe('mon-cv.pdf');
+      await vi.waitFor(() => expect(download.revoke).toHaveBeenCalledWith('blob:cv-pdf'));
+    },
+  );
+
+  it.each([
+    [404, 'plus disponible'],
+    [500, 'Réessayez'],
+  ])(
+    'shows a download error %s and allows retrying without losing the current metadata',
+    async (status, message) => {
+      const download = browserDownload();
+      http.expectOne('/api/me/cv').flush(current);
+      fixture.detectChanges();
+      const button: HTMLButtonElement = fixture.nativeElement.querySelector('.cv-download');
+      button.click();
+      http
+        .expectOne('/api/me/cv/file')
+        .flush(new Blob(['internal details'], { type: 'application/json' }), {
+          status,
+          statusText: 'Error',
+        });
+      fixture.detectChanges();
+      expect(fixture.nativeElement.querySelector('[role="alert"]').textContent).toContain(message);
+      expect(fixture.nativeElement.textContent).not.toContain('internal details');
+      expect(fixture.nativeElement.textContent).toContain('mon-cv.pdf');
+      expect(button.disabled).toBe(false);
+      expect(download.create).not.toHaveBeenCalled();
+      button.click();
+      fixture.detectChanges();
+      expect(fixture.nativeElement.querySelector('[role="alert"]')).toBeNull();
+      http.expectOne('/api/me/cv/file').flush(new Blob(['pdf'], { type: 'application/pdf' }));
+      await vi.waitFor(() => expect(download.revoke).toHaveBeenCalledWith('blob:cv-pdf'));
+    },
+  );
+
+  it('cancels a pending download when leaving the page without creating a browser file', () => {
+    const download = browserDownload();
+    http.expectOne('/api/me/cv').flush(current);
+    fixture.detectChanges();
+    fixture.nativeElement.querySelector('.cv-download').click();
+    const request = http.expectOne('/api/me/cv/file');
+    fixture.destroy();
+    expect(request.cancelled).toBe(true);
+    expect(download.create).not.toHaveBeenCalled();
+  });
+
+  it('disables downloading during replacement and clears a previous download error on success', () => {
+    http.expectOne('/api/me/cv').flush(current);
+    fixture.detectChanges();
+    const button: HTMLButtonElement = fixture.nativeElement.querySelector('.cv-download');
+    button.click();
+    http.expectOne('/api/me/cv/file').flush(null, { status: 500, statusText: 'Error' });
+    selectFile(new File(['pdf'], 'replacement.pdf', { type: 'application/pdf' }));
+    submit();
+    expect(button.disabled).toBe(true);
+    button.click();
+    http.expectNone('/api/me/cv/file');
+    http
+      .expectOne('/api/me/cv')
+      .flush({ ...current, originalFilename: 'replacement.pdf', version: 2 });
+    fixture.detectChanges();
+    expect(button.disabled).toBe(false);
+    expect(fixture.nativeElement.querySelector('[role="alert"]')).toBeNull();
+  });
 
   function selectFile(file: File): void {
     const input: HTMLInputElement = fixture.nativeElement.querySelector('input[type="file"]');
@@ -62,6 +190,7 @@ describe('Cv page', () => {
     fixture.detectChanges();
     expect(fixture.nativeElement.textContent).toContain('Aucun CV importé');
     expect(fixture.nativeElement.querySelector('[role="alert"]')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.cv-download')).toBeNull();
   });
 
   it('allows retrying a failed load without showing server details', () => {

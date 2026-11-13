@@ -2,6 +2,7 @@ import { DatePipe, DecimalPipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, DestroyRef, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { finalize } from 'rxjs';
 import { CvMetadataDto, CvService } from '../../generated';
 
 @Component({
@@ -20,6 +21,8 @@ export class Cv {
   readonly saving = signal(false);
   readonly uploadError = signal<string | null>(null);
   readonly success = signal(false);
+  readonly downloading = signal(false);
+  readonly downloadError = signal<string | null>(null);
 
   constructor() {
     this.load();
@@ -82,6 +85,7 @@ export class Cv {
           input.value = '';
           this.saving.set(false);
           this.success.set(true);
+          this.downloadError.set(null);
         },
         error: (error: HttpErrorResponse) => {
           this.saving.set(false);
@@ -102,5 +106,57 @@ export class Cv {
           }
         },
       });
+  }
+
+  download(): void {
+    const cv = this.metadata();
+    if (!cv || this.downloading() || this.saving()) return;
+    this.downloading.set(true);
+    this.downloadError.set(null);
+    this.api
+      .downloadCv('response')
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => this.downloading.set(false)),
+      )
+      .subscribe({
+        next: (response) => {
+          if (!response.body) {
+            this.downloadError.set('Impossible de télécharger votre CV. Réessayez.');
+            return;
+          }
+          const url = URL.createObjectURL(response.body);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = this.downloadFilename(
+            response.headers.get('Content-Disposition'),
+            cv.originalFilename,
+          );
+          document.body.appendChild(link);
+          try {
+            link.click();
+          } finally {
+            link.remove();
+            setTimeout(() => URL.revokeObjectURL(url), 0);
+          }
+        },
+        error: (error: HttpErrorResponse) => {
+          this.downloadError.set(
+            error.status === 404
+              ? 'Ce CV n’est plus disponible. Actualisez la page.'
+              : 'Impossible de télécharger votre CV. Réessayez.',
+          );
+        },
+      });
+  }
+
+  private downloadFilename(disposition: string | null, fallback: string): string {
+    const encoded = disposition?.match(/filename\*=UTF-8''([^;]+)/i)?.[1];
+    if (!encoded) return fallback;
+    try {
+      return decodeURIComponent(encoded);
+    } catch {
+      return fallback;
+    }
   }
 }
