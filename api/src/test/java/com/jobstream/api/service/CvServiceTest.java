@@ -74,6 +74,27 @@ class CvServiceTest {
     }
 
     @Test
+    void delete_shouldRemoveTheCommittedCvAndItsMetadata() throws IOException {
+        cvService.uploadCv(alice.getId(),
+                new MockMultipartFile("file", "cv.pdf", "application/pdf", pdf("CV")));
+
+        cvService.deleteCv(alice.getId());
+
+        assertThatThrownBy(() -> cvService.getCvFile(alice.getId()))
+                .isInstanceOf(ResourceNotFoundException.class);
+        assertThatThrownBy(() -> cvService.getCvMetadata(alice.getId()))
+                .isInstanceOf(ResourceNotFoundException.class);
+        assertThat(cvRepository.findByUserId(alice.getId())).isEmpty();
+        assertThat(userRepository.existsById(alice.getId())).isTrue();
+    }
+
+    @Test
+    void delete_shouldThrowNotFoundWhenThereIsNoCv() {
+        assertThatThrownBy(() -> cvService.deleteCv(alice.getId()))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
     void getFile_shouldReturnTheCurrentPdfBytesAndFilename() throws IOException {
         cvService.uploadCv(alice.getId(),
                 new MockMultipartFile("file", "first.pdf", "application/pdf", pdf("First")));

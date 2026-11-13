@@ -204,9 +204,65 @@ class CvControllerTest {
     }
 
     @Test
-    void delete_shouldReturnNotImplemented() throws Exception {
+    void delete_shouldRemoveTheCvAndReturnNoContent() throws Exception {
+        mockMvc.perform(multipart("/me/cv").file(pdf()).with(request -> {
+            request.setMethod("PUT");
+            return request;
+        }).header("Authorization", "Bearer " + token)).andExpect(status().isCreated());
+
         mockMvc.perform(delete("/me/cv").header("Authorization", "Bearer " + token))
-                .andExpect(status().isNotImplemented());
+                .andExpect(status().isNoContent())
+                .andExpect(content().string(""));
+        mockMvc.perform(get("/me/cv").header("Authorization", "Bearer " + token))
+                .andExpect(status().isNotFound());
+        mockMvc.perform(get("/me/cv/file").header("Authorization", "Bearer " + token))
+                .andExpect(status().isNotFound());
+        mockMvc.perform(delete("/me/cv").header("Authorization", "Bearer " + token))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void delete_shouldReturnNotFoundWhenThereIsNoCv() throws Exception {
+        mockMvc.perform(delete("/me/cv").header("Authorization", "Bearer " + token))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404))
+                .andExpect(jsonPath("$.error").value("Resource not found"))
+                .andExpect(jsonPath("$.message").value("CV not found"));
+    }
+
+    @Test
+    void delete_shouldRequireAuthentication() throws Exception {
+        mockMvc.perform(delete("/me/cv")).andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void delete_shouldOnlyRemoveTheAuthenticatedOwnersCv() throws Exception {
+        var aliceFile = pdf();
+        mockMvc.perform(multipart("/me/cv").file(aliceFile).with(request -> {
+            request.setMethod("PUT");
+            return request;
+        }).header("Authorization", "Bearer " + token)).andExpect(status().isCreated());
+        User bob = new User();
+        bob.setEmail("cv-delete-bob@example.com");
+        bob.setPassword("unused");
+        bob.setRole(Role.USER);
+        String bobToken = jwtService.generateToken(userRepository.saveAndFlush(bob));
+        String aliceId = userRepository.findByEmail("cv-controller@example.com").orElseThrow().getId().toString();
+
+        mockMvc.perform(delete("/me/cv").param("userId", aliceId)
+                .header("Authorization", "Bearer " + bobToken)).andExpect(status().isNotFound());
+        mockMvc.perform(multipart("/me/cv").file(pdf()).with(request -> {
+            request.setMethod("PUT");
+            return request;
+        }).header("Authorization", "Bearer " + bobToken)).andExpect(status().isCreated());
+        mockMvc.perform(delete("/me/cv").param("userId", aliceId)
+                .header("Authorization", "Bearer " + bobToken)).andExpect(status().isNoContent());
+
+        mockMvc.perform(get("/me/cv/file").header("Authorization", "Bearer " + bobToken))
+                .andExpect(status().isNotFound());
+        mockMvc.perform(get("/me/cv/file").header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(content().bytes(aliceFile.getBytes()));
     }
 
     @ParameterizedTest

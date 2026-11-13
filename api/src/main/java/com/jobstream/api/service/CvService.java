@@ -26,6 +26,13 @@ public class CvService {
     private final UserRepository userRepository;
     private final CvMapper cvMapper;
 
+    @Transactional
+    public void deleteCv(Long userId) {
+        UserCv cv = cvRepository.findByUserId(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("CV not found"));
+        cvRepository.delete(cv);
+    }
+
     @Transactional(readOnly = true)
     public UserCv getCvFile(Long userId) {
         return cvRepository.findByUserId(userId)
